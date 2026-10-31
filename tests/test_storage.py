@@ -1,5 +1,6 @@
 """Exercise actual HA Store failures, including its swallowed write errors."""
 
+import asyncio
 from unittest.mock import patch
 
 import pytest
@@ -65,4 +66,33 @@ async def test_shutdown_cannot_acknowledge_a_deferred_save(tmp_path):
             await store.async_save({"enabled": True})
         assert await store.async_load() == {"enabled": False}
     finally:
+        await hass.async_stop(force=True)
+
+
+async def test_cancelled_save_finishes_before_releasing_its_caller(tmp_path):
+    hass = HomeAssistant(str(tmp_path))
+    store = CheckedStore(hass, 1, "synthetic_policy", private=True)
+    started, finish = asyncio.Event(), asyncio.Event()
+    original = store._async_write_data
+
+    async def delayed_write(data):
+        started.set()
+        await finish.wait()
+        await original(data)
+
+    try:
+        with patch.object(store, "_async_write_data", side_effect=delayed_write):
+            save = asyncio.create_task(store.async_save({"enabled": False}))
+            await started.wait()
+            for _ in range(2):
+                save.cancel()
+                await asyncio.sleep(0)
+                assert not save.done()
+            finish.set()
+            with pytest.raises(asyncio.CancelledError):
+                await save
+        reloaded = CheckedStore(hass, 1, "synthetic_policy", private=True)
+        assert await reloaded.async_load() == {"enabled": False}
+    finally:
+        finish.set()
         await hass.async_stop(force=True)

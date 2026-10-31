@@ -1,5 +1,6 @@
 """Confirm that access policy reached disk before acknowledging a change."""
 
+import asyncio
 import json
 from pathlib import Path
 
@@ -17,6 +18,20 @@ class CheckedStore(Store):
     """
 
     async def async_save(self, data):
+        # A cancelled request must not release the manager's mutation lock while
+        # an executor write can still overwrite a newer access policy.
+        write = asyncio.create_task(self._async_save_checked(data))
+        cancelled = False
+        while not write.done():
+            try:
+                await asyncio.shield(write)
+            except asyncio.CancelledError:
+                cancelled = True
+        write.result()
+        if cancelled:
+            raise asyncio.CancelledError
+
+    async def _async_save_checked(self, data):
         if self.hass.state is CoreState.stopping:
             raise WriteError("Guest access changes cannot be saved during shutdown")
         await super().async_save(data)
