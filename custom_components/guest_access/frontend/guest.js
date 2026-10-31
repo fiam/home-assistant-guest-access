@@ -46,6 +46,11 @@ import {
     $("login-note").hidden = false;
     $("intro").textContent = strings.intro;
   }
+  function requestId() {
+    // getRandomValues also works on LAN HTTP origins; randomUUID requires HTTPS.
+    const bytes = crypto.getRandomValues(new Uint8Array(16));
+    return Array.from(bytes, byte => byte.toString(16).padStart(2, "0")).join("");
+  }
   async function api(operation, data = {}) {
     let response, result;
     try {
@@ -193,7 +198,7 @@ import {
     $("actions").querySelectorAll("button").forEach((b) => (b.disabled = true));
     message(strings.sending);
     try {
-      await api("action", { action_id: action.id, request_id: crypto.randomUUID() });
+      await api("action", { action_id: action.id, request_id: requestId() });
       if (started === epoch) message(strings.sent);
     } catch (error) {
       if (started !== epoch) return;

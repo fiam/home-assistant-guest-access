@@ -51,3 +51,17 @@ test("invalid credentials require login; pause recovery does not bypass authenti
   assert.equal(page.get("login").hidden, false);
   assert.equal(page.get("controls").hidden, true);
 });
+
+
+test("actions work without the secure-context-only randomUUID API", async (t) => {
+  const page = await guestPage(({ operation }) => response(operation === "action" ? { requested: true } : activeState()), { uuid: false });
+  t.after(page.close);
+  page.get("actions").querySelector("button").click();
+  assert.equal(page.get("confirm").open, true);
+  page.get("send").click();
+  await flush();
+  const action = page.calls.find(call => call.operation === "action");
+  assert.ok(action);
+  assert.match(action.body.request_id, /^[0-9a-f]{32}$/);
+  assert.equal(page.get("message").textContent, "Request sent.");
+});
