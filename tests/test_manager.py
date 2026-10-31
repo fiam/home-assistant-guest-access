@@ -473,3 +473,23 @@ async def test_pause_does_not_restore_stale_policy_and_edits_conflict(
     with pytest.raises(AccessError, match="conflict"):
         await m.save_link(stale, link_id=authorized.link_id, expected_version=version)
     assert len(m.links[authorized.link_id]["grants"]) == 1
+
+
+async def test_rejected_peer_cannot_exhaust_other_guests_login_budget(authorized):
+    m = authorized.manager
+    for i in range(60):
+        with pytest.raises(AccessError):
+            await m.login(f"synthetic-unknown-{i}", "wrong", "attacker-peer")
+    token = await m.login(authorized.link_id, "synthetic-password-one", "guest-peer")
+    assert m.status(token)
+    assert len(m.attempts["global"]) == 12  # Initial sign-in, ten attempts, guest.
+
+
+async def test_rejected_link_does_not_exhaust_shared_login_budget(authorized):
+    m = authorized.manager
+    for i in range(60):
+        with pytest.raises(AccessError):
+            await m.login("synthetic-unknown", "wrong", f"attacker-{i}")
+    token = await m.login(authorized.link_id, "synthetic-password-one", "guest-peer")
+    assert m.status(token)
+    assert len(m.attempts["global"]) == 7

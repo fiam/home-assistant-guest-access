@@ -361,17 +361,26 @@ class Manager:
             self._event("deleted", record)
             await self._save()
 
-    def _limit(self, key, limit):
+    def _limit(self, budgets):
+        """Charge all limits together; rejected peers cannot consume shared slots."""
         now = self.monotonic()
-        while self.attempts and next(iter(self.attempts.values()))[-1] <= now - 60:
+        while self.attempts:
+            first = next(iter(self.attempts.values()))
+            if first and first[-1] > now - 60:
+                break
             self.attempts.popitem(last=False)
-        bucket = self.attempts.setdefault(key, deque())
-        self.attempts.move_to_end(key)
-        while bucket and bucket[0] <= now - 60:
-            bucket.popleft()
-        if len(bucket) >= limit:
-            raise AccessError("try_later", 429)
-        bucket.append(now)
+        checked = []
+        for key, limit in budgets:
+            bucket = self.attempts.get(key, deque())
+            while bucket and bucket[0] <= now - 60:
+                bucket.popleft()
+            if len(bucket) >= limit:
+                raise AccessError("try_later", 429)
+            checked.append((key, bucket))
+        for key, bucket in checked:
+            bucket.append(now)
+            self.attempts[key] = bucket
+            self.attempts.move_to_end(key)
         while len(self.attempts) > 1024:
             self.attempts.popitem(last=False)
 
@@ -390,9 +399,7 @@ class Manager:
         if not isinstance(password, str) or len(password) > 128:
             raise AccessError("invalid_credentials", 401)
         # Count all attempts before expensive hashing, including unknown link IDs.
-        self._limit("global", 60)
-        self._limit(("peer", peer), 10)
-        self._limit(("link", link_id), 5)
+        self._limit([(("peer", peer), 10), (("link", link_id), 5), ("global", 60)])
         record = self.links.get(link_id)
         snapshot = copy.deepcopy(record)
         async with self.hash_slots:
