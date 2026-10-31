@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width,initial-scale=1,viewport-fit=cover"
+    />
+    <meta name="referrer" content="no-referrer" />
+    <meta
+      name="theme-color"
+      content="#f5f7fa"
+      media="(prefers-color-scheme: light)"
+    />
+    <meta
+      name="theme-color"
+      content="#11171e"
+      media="(prefers-color-scheme: dark)"
+    />
+    <title>Home access</title>
+    <link rel="stylesheet" href="/guest-access/assets/guest.css?v=0.3.1" />
+    <script type="module" src="/guest-access/assets/guest.js?v=0.3.1"></script>
+  </head>
+  <body>
+    <main>
+      <header>
+        <div class="mark" data-icon="home" aria-hidden="true"></div>
+        <p class="eyebrow" data-i18n="welcome">Welcome home</p>
+        <h1 data-i18n="title">Home access</h1>
+        <p id="intro" data-i18n="intro">Enter the password shared with you.</p>
+      </header>
+      <p id="message" role="status" aria-live="polite"></p>
+      <form id="login" class="card">
+        <label for="password" data-i18n="password">Password</label>
+        <input
+          id="password"
+          type="password"
+          autocomplete="current-password"
+          maxlength="128"
+          required
+        />
+        <label class="remember"
+          ><input id="remember" type="checkbox" checked /><span
+            data-i18n="remember"
+            >Remember this browser</span
+          ></label
+        >
+        <button type="submit">
+          <span data-i18n="enter">Continue</span><span data-icon="arrow"></span>
+        </button>
+      </form>
+      <section id="controls" hidden>
+        <p class="schedule">
+          <span data-icon="clock"></span><span id="expiry"></span>
+        </p>
+        <div id="actions"></div>
+        <button id="logout" class="text-button" type="button">
+          <span data-icon="logout"></span
+          ><span data-i18n="logout">Sign out</span>
+        </button>
+      </section>
+      <footer id="login-note">
+        <span data-icon="shield"></span>
+        <p data-i18n="footnote">
+          Your access is available only during the approved period.
+        </p>
+      </footer>
+    </main>
+    <dialog
+      id="confirm"
+      aria-labelledby="confirm-title"
+      aria-describedby="confirm-body"
+    >
+      <div class="dialog-icon" id="confirm-icon"></div>
+      <h2 id="confirm-title" data-i18n="confirmTitle">Confirm action</h2>
+      <p id="confirm-body" data-i18n="confirmBody">Send this request now?</p>
+      <div class="dialog-actions">
+        <button id="cancel" class="secondary" type="button" data-i18n="cancel">
+          Cancel
+        </button>
+        <button id="send" type="button">
+          <span data-icon="check"></span
+          ><span data-i18n="confirm">Confirm</span>
+        </button>
+      </div>
+    </dialog>
+  </body>
+</html>

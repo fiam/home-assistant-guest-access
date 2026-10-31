@@ -1,0 +1,12 @@
+{
+  "title": "Guest Access",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Guest Access",
+        "description": "Create password-protected guest links from the Guest Access sidebar. Access starts paused. Guest links use your existing Home Assistant URL; use HTTPS when sharing externally."
+      }
+    },
+    "abort": {"single_instance_allowed": "Guest Access is already configured."}
+  }
+}
