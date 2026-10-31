@@ -18,7 +18,8 @@ import {
   for (const node of document.querySelectorAll("[data-icon]"))
     node.replaceChildren(icon(node.dataset.icon));
   const $ = (id) => document.getElementById(id);
-  const link = location.hash.slice(1);
+  let link = location.hash.slice(1);
+  const pendingRequests = new Set();
   let signedIn = false,
     busy = false,
     selected = null,
@@ -53,6 +54,8 @@ import {
   }
   async function api(operation, data = {}) {
     let response, result;
+    const controller = new AbortController();
+    pendingRequests.add(controller);
     try {
       response = await fetch(`/api/guest_access/${operation}`, {
         method: "POST",
@@ -64,13 +67,15 @@ import {
           "X-Guest-Link": link,
         },
         body: JSON.stringify(data),
-        signal: AbortSignal.timeout(25000),
+        signal: AbortSignal.any([controller.signal, AbortSignal.timeout(25000)]),
       });
       result = await response.json();
     } catch {
       throw new Error(
         operation === "action" ? strings.errors.unconfirmed : strings.failure,
       );
+    } finally {
+      pendingRequests.delete(controller);
     }
     if (!response.ok) {
       const error = new Error(messages[result.error] || strings.failure);
@@ -145,7 +150,7 @@ import {
     }
   }
   async function refresh(silent = false) {
-    if (busy) return;
+    if (busy || !/^[A-Za-z0-9_-]{43}$/.test(link)) return;
     const started = epoch, sequence = ++statusSequence;
     try {
       const data = await api("status");
@@ -240,8 +245,20 @@ import {
   setInterval(() => {
     if (signedIn) refresh();
   }, 15000);
-  if (!/^[A-Za-z0-9_-]{43}$/.test(link)) {
-    $("login").hidden = true;
-    message(strings.invalidLink, true);
-  } else refresh(true);
+  function openLink() {
+    if (!/^[A-Za-z0-9_-]{43}$/.test(link)) {
+      $("login").hidden = true;
+      message(strings.invalidLink, true);
+    } else refresh(true);
+  }
+  window.addEventListener("hashchange", () => {
+    link = location.hash.slice(1);
+    forget();
+    message("");
+    $("password").value = "";
+    for (const request of pendingRequests) request.abort();
+    pendingRequests.clear();
+    openLink();
+  });
+  openLink();
 })();
