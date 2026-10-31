@@ -399,3 +399,57 @@ async def test_paused_browser_is_remembered_but_cannot_act(
     else:
         await m.save_link(link_data, link_id=authorized.link_id)
     assert m.status(token)
+
+
+async def test_save_waiting_for_hash_cannot_overwrite_reloaded_policy(
+    authorized, link_data
+):
+    old = authorized.manager
+    await old.hash_slots.acquire()
+    await old.hash_slots.acquire()
+    pending = asyncio.create_task(
+        old.save_link(
+            link_data, link_id=authorized.link_id, password="synthetic-password-two"
+        )
+    )
+    await asyncio.sleep(0)
+    await old.close()
+    replacement = Manager(
+        authorized.store,
+        old.dispatch,
+        old.available,
+        key_store=authorized.key_store,
+        now=old.now,
+    )
+    await replacement.load()
+    await replacement.set_enabled(False)
+    old.hash_slots.release()
+    old.hash_slots.release()
+    with pytest.raises(AccessError, match="unavailable"):
+        await pending
+    await replacement.load()
+    assert replacement.enabled is False
+
+
+async def test_close_waits_for_an_accepted_storage_write(authorized):
+    old = authorized.manager
+    original_save = authorized.store.async_save
+    started, release = asyncio.Event(), asyncio.Event()
+
+    async def slow_save(data):
+        started.set()
+        await release.wait()
+        await original_save(data)
+
+    authorized.store.async_save = slow_save
+    pending = asyncio.create_task(old.set_enabled(False))
+    await started.wait()
+    closing = asyncio.create_task(old.close())
+    await asyncio.sleep(0)
+    assert not closing.done()
+    release.set()
+    await pending
+    await closing
+    assert authorized.store.data["enabled"] is False
+    with pytest.raises(AccessError, match="unavailable"):
+        await old.set_enabled(True)

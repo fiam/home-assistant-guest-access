@@ -65,9 +65,8 @@ async def async_unload_entry(hass, entry):
     manager = hass.data.pop(DOMAIN)
     manager.closed = True
     frontend.async_remove_panel(hass, "guest-access-admin")
-    # Let accepted actions finish their audit writes before another manager loads.
-    await manager.idle.wait()
-    manager.sessions.clear()
+    # Drain accepted actions and writes; queued mutations reject the closed manager.
+    await manager.close()
     return True
 
 

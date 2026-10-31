@@ -224,10 +224,22 @@ class Manager:
             "audit": copy.deepcopy(self.audit[-100:]),
         }
 
+    def _ensure_open(self):
+        if self.closed:
+            raise AccessError("unavailable", 503)
+
+    async def close(self):
+        """Reject queued mutations and drain accepted writes before replacement."""
+        self.closed = True
+        await self.idle.wait()
+        async with self.lock:
+            self.sessions.clear()
+
     async def set_enabled(self, enabled):
         if not isinstance(enabled, bool):
             raise AccessError("invalid_link", 400)
         async with self.lock:
+            self._ensure_open()
             self.enabled = enabled
             if not enabled:
                 self.sessions = {
@@ -250,6 +262,7 @@ class Manager:
             async with self.hash_slots:
                 hashed = await asyncio.to_thread(password_hash, password)
         async with self.lock:
+            self._ensure_open()
             if link_id is None:
                 if len(self.links) >= 100:
                     raise AccessError("too_many_links", 400)
@@ -288,6 +301,7 @@ class Manager:
     async def reveal_password(self, link_id):
         """Called only by the authenticated admin endpoint, never guest endpoints."""
         async with self.lock:
+            self._ensure_open()
             record = self.links.get(link_id)
             if record is None:
                 raise AccessError("not_found", 404)
@@ -307,6 +321,7 @@ class Manager:
 
     async def delete_link(self, link_id):
         async with self.lock:
+            self._ensure_open()
             record = self.links.pop(link_id, None)
             if record is None:
                 raise AccessError("not_found", 404)
@@ -427,6 +442,7 @@ class Manager:
 
     async def logout(self, token):
         async with self.lock:
+            self._ensure_open()
             removed = self.sessions.pop(hashlib.sha256(token.encode()).digest(), None)
             if removed and removed.get("persistent"):
                 await self._save()
