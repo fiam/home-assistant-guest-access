@@ -36,6 +36,8 @@ input[type=checkbox] { width:20px; height:20px; min-height:20px; margin:0; accen
 .choice input:not([type=checkbox]) { margin-top:10px; }
 small { line-height:1.5; }
 .toolbar { margin:16px 0 28px; }
+.picker-mode { max-width:260px; }
+.control-summary { display:block; font-size:12px; color:var(--secondary-text-color); margin-top:4px; }
 .secret { font-family:monospace; overflow-wrap:anywhere; font-size:18px; }
 .actions { margin-top:20px; padding-top:16px; border-top:1px solid var(--divider-color,#ddd); }
 .pill { font-size:12px; border-radius:12px; background:var(--ga-tint); color:var(--primary-color); padding:4px 10px; }
@@ -192,6 +194,19 @@ class GuestAccessPanel extends HTMLElement {
         ]),
       );
     for (const link of this.data.links) {
+      const summaries = new Map();
+      for (const grant of link.grants) {
+        const key = `${grant.entity_id}:${grant.label}`;
+        if (!summaries.has(key)) summaries.set(key, { ...grant, actions: [] });
+        summaries
+          .get(key)
+          .actions.push(
+            this.data.catalog.find(
+              (c) =>
+                c.entity_id === grant.entity_id && c.action === grant.action,
+            )?.action_name || grant.action.replaceAll("_", " "),
+          );
+      }
       const secretRegion = el("div", {
         className: "password-reveal",
         hidden: true,
@@ -217,10 +232,16 @@ class GuestAccessPanel extends HTMLElement {
           el(
             "ul",
             {},
-            link.grants.map((g) =>
+            [...summaries.values()].map((g) =>
               el("li", {}, [
                 icon(actionIcon(g.entity_id.split(".")[0] + "." + g.action)),
-                el("span", { text: g.label }),
+                el("span", {}, [
+                  el("span", { text: g.label }),
+                  el("small", {
+                    className: "control-summary",
+                    text: g.actions.join(" · "),
+                  }),
+                ]),
               ]),
             ),
           ),
@@ -384,12 +405,13 @@ class GuestAccessPanel extends HTMLElement {
       ]),
       el("h3", { text: "Allowed actions" }),
       el("p", {
-        text: "Select “Open door” to share only door opening. “Apartment door” and “Building entrance” are translated for guests; other names stay as entered.",
+        text: "Choose a device to share all its listed controls, or use Individual actions to choose only some, such as Open door.",
       }),
     );
     const search = el("input", {
       placeholder: "Filter by device, entity or action",
       type: "search",
+      "aria-label": "Filter devices and actions",
     });
     const catalog = el("div", { className: "catalog" });
     const selections = new Map(
@@ -409,7 +431,16 @@ class GuestAccessPanel extends HTMLElement {
           name: grant.entity_id,
           action_name: grant.action,
         });
-    const drawChoices = () => {
+    const mode = el(
+      "select",
+      { className: "picker-mode", "aria-label": "Share by" },
+      [
+        el("option", { value: "devices", text: "Devices" }),
+        el("option", { value: "actions", text: "Individual actions" }),
+      ],
+    );
+    mode.value = "devices";
+    const drawActions = () => {
       catalog.replaceChildren();
       const query = search.value.toLowerCase();
       for (const [key, choice] of choices) {
@@ -456,9 +487,81 @@ class GuestAccessPanel extends HTMLElement {
         );
       }
     };
+    const drawDevices = () => {
+      catalog.replaceChildren();
+      const groups = new Map();
+      for (const [key, choice] of choices) {
+        if (!groups.has(choice.entity_id)) groups.set(choice.entity_id, []);
+        groups.get(choice.entity_id).push({ key, ...choice });
+      }
+      const query = search.value.toLowerCase();
+      for (const [entity, controls] of groups) {
+        const first = controls[0];
+        if (
+          !`${first.name} ${entity} ${controls.map((c) => c.action_name).join(" ")}`
+            .toLowerCase()
+            .includes(query)
+        )
+          continue;
+        const selected = controls.filter((c) => selections.has(c.key));
+        const check = el("input", {
+          type: "checkbox",
+          checked: selected.length === controls.length,
+          indeterminate:
+            selected.length > 0 && selected.length < controls.length,
+        });
+        const label = el("input", {
+          value: selected.length
+            ? selections.get(selected[0].key).label
+            : String(first.name || entity).slice(0, 80),
+          maxLength: 80,
+          "aria-label": "Guest device name",
+          hidden: !selected.length,
+        });
+        const summary = el("small");
+        const summarize = () => {
+          const granted = controls.filter((c) => selections.has(c.key));
+          summary.textContent = `${granted.length ? "Selected" : "Available"}: ${(granted.length ? granted : controls).map((c) => c.action_name).join(" · ")}`;
+        };
+        check.addEventListener("change", () => {
+          check.indeterminate = false;
+          label.hidden = !check.checked;
+          for (const control of controls) {
+            if (check.checked)
+              selections.set(control.key, {
+                entity_id: entity,
+                action: control.action,
+                label: label.value,
+              });
+            else selections.delete(control.key);
+          }
+          summarize();
+        });
+        label.addEventListener("input", () => {
+          for (const control of controls)
+            if (selections.has(control.key))
+              selections.get(control.key).label = label.value;
+        });
+        summarize();
+        catalog.append(
+          el("div", { className: "choice" }, [
+            el("label", { className: "check" }, [
+              check,
+              el("span", { text: first.name }),
+            ]),
+            summary,
+            el("small", { text: entity }),
+            label,
+          ]),
+        );
+      }
+    };
+    const drawChoices = () =>
+      mode.value === "devices" ? drawDevices() : drawActions();
     search.addEventListener("input", drawChoices);
+    mode.addEventListener("change", drawChoices);
     drawChoices();
-    form.append(search, catalog);
+    form.append(field("Share by", mode), search, catalog);
     const save = el("button", {
       type: "submit",
       text: "Save link",
@@ -480,6 +583,11 @@ class GuestAccessPanel extends HTMLElement {
       event.preventDefault();
       if (!selections.size) {
         this.notice.textContent = "Select at least one action.";
+        return;
+      }
+      if (selections.size > 32) {
+        this.notice.textContent =
+          "A link can share up to 32 actions. Select fewer devices or choose individual actions.";
         return;
       }
       if (new Date(ends.value) <= new Date(starts.value)) {
