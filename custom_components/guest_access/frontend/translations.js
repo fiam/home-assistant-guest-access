@@ -1,5 +1,19 @@
 export const translations = {
   en: {
+    brightness: "Brightness",
+    position: "Position",
+    apply: "Apply",
+    closed: "Closed",
+    open: "Open",
+    states: {
+      on: "On",
+      off: "Off",
+      open: "Open",
+      closed: "Closed",
+      opening: "Opening",
+      closing: "Closing",
+      unknown: "Currently unavailable",
+    },
     remember: "Remember this browser",
     labels: {
       "Apartment door": "Apartment door",
@@ -25,6 +39,9 @@ export const translations = {
     invalidLink: "This link is not valid. Please ask for a new one.",
     failure: "The request could not be completed.",
     actions: {
+      set_brightness: "Set brightness",
+      set_cover_position: "Set position",
+
       open: "Open door",
       lock: "Lock",
       unlock: "Unlock",
@@ -36,6 +53,7 @@ export const translations = {
       press: "Press",
     },
     errors: {
+      invalid_value: "Choose a value from 0 to 100.",
       invalid_credentials: "The link or password is incorrect.",
       sign_in: "Enter the password again to continue.",
       access_paused:
@@ -54,6 +72,20 @@ export const translations = {
     },
   },
   pt: {
+    brightness: "Luminosidade",
+    position: "Posição",
+    apply: "Aplicar",
+    closed: "Fechado",
+    open: "Aberto",
+    states: {
+      on: "Ligado",
+      off: "Desligado",
+      open: "Aberto",
+      closed: "Fechado",
+      opening: "A abrir",
+      closing: "A fechar",
+      unknown: "Indisponível de momento",
+    },
     remember: "Lembrar este navegador",
     labels: {
       "Apartment door": "Porta de casa",
@@ -79,6 +111,9 @@ export const translations = {
     invalidLink: "Este link não é válido. Peça um novo link.",
     failure: "Não foi possível completar o pedido.",
     actions: {
+      set_brightness: "Ajustar luminosidade",
+      set_cover_position: "Ajustar posição",
+
       open: "Abrir porta",
       lock: "Trancar",
       unlock: "Destrancar",
@@ -90,6 +125,7 @@ export const translations = {
       press: "Premir",
     },
     errors: {
+      invalid_value: "Escolha um valor entre 0 e 100.",
       invalid_credentials: "O link ou a palavra-passe não está correto.",
       sign_in: "Introduza novamente a palavra-passe para continuar.",
       access_paused:
@@ -108,6 +144,20 @@ export const translations = {
     },
   },
   es: {
+    brightness: "Brillo",
+    position: "Posición",
+    apply: "Aplicar",
+    closed: "Cerrado",
+    open: "Abierto",
+    states: {
+      on: "Encendido",
+      off: "Apagado",
+      open: "Abierto",
+      closed: "Cerrado",
+      opening: "Abriendo",
+      closing: "Cerrando",
+      unknown: "No disponible en este momento",
+    },
     remember: "Recordar este navegador",
     labels: {
       "Apartment door": "Puerta de casa",
@@ -133,6 +183,9 @@ export const translations = {
     invalidLink: "Este enlace no es válido. Pide uno nuevo.",
     failure: "No se ha podido completar la solicitud.",
     actions: {
+      set_brightness: "Ajustar brillo",
+      set_cover_position: "Ajustar posición",
+
       open: "Abrir puerta",
       lock: "Cerrar con llave",
       unlock: "Desbloquear",
@@ -144,6 +197,7 @@ export const translations = {
       press: "Pulsar",
     },
     errors: {
+      invalid_value: "Elige un valor entre 0 y 100.",
       invalid_credentials: "El enlace o la contraseña no es correcto.",
       sign_in: "Introduce de nuevo la contraseña para continuar.",
       access_paused:

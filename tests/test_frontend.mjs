@@ -27,7 +27,7 @@ test("all translated states and errors are complete", () => {
       Object.keys(translations[lang]).sort(),
       Object.keys(translations.en).sort(),
     );
-    for (const field of ["actions", "errors", "labels"])
+    for (const field of ["actions", "errors", "labels", "states"])
       assert.deepEqual(
         Object.keys(translations[lang][field]).sort(),
         Object.keys(translations.en[field]).sort(),

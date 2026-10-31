@@ -23,6 +23,7 @@ const paths = {
   check: ["m4 12 5 5L20 6"],
   key: ["M13 8a5 5 0 1 1-10 0 5 5 0 0 1 10 0", "m12 12 9 9", "m17 17 3-3"],
   shield: ["m12 2 9 4v6c0 5-9 10-9 10S3 17 3 12V6z", "m8 12 3 3 5-6"],
+  light: ["M9 18h6", "M10 21h4", "M8 15a7 7 0 1 1 8 0l-1 3H9z"],
   power: ["M12 2v10", "M6 5a9 9 0 1 0 12 0"],
   cover: ["M4 3h16v18H4z", "M4 7h16", "M4 11h16", "M4 15h16"],
   stop: ["M5 5h14v14H5z"],
@@ -61,6 +62,7 @@ export function actionIcon(kind = "") {
   if (kind === "lock.lock") return "lock";
   if (kind === "lock.unlock") return "unlock";
   if (kind.endsWith(".stop_cover")) return "stop";
+  if (kind.startsWith("light.")) return "light";
   if (kind.startsWith("cover.")) return "cover";
   if (/\.(turn_on|turn_off)$/.test(kind)) return "power";
   return "press";

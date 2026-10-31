@@ -356,3 +356,81 @@ dialog p {
   margin: 0;
   accent-color: var(--primary);
 }
+
+.device-card {
+  text-align: left;
+  padding: 20px;
+}
+.device-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+.device-header h2 {
+  margin: 0;
+}
+.device-header p {
+  margin-bottom: 0;
+}
+.device-buttons {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(72px, 1fr));
+  gap: 8px;
+}
+.device-button {
+  min-height: 44px;
+  font-size: 14px;
+  padding: 10px 8px;
+}
+.device-button[aria-pressed="true"] {
+  background: var(--primary);
+  color: var(--on-primary);
+}
+.device-slider {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+}
+.slider-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  font-size: 14px;
+}
+.slider-heading label {
+  margin: 0;
+}
+.slider-heading output {
+  margin-left: auto;
+  color: var(--primary);
+  font-weight: 600;
+}
+.device-slider input[type="range"] {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  accent-color: var(--primary);
+  min-height: 44px;
+  margin: 4px 0 0;
+  cursor: pointer;
+}
+.device-slider input[type="range"]:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.slider-ends {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--muted);
+}
+.slider-apply {
+  display: flex;
+  width: auto;
+  min-height: 44px;
+  margin: 0;
+  font-size: 14px;
+  padding: 10px 16px;
+}
