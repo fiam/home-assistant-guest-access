@@ -156,10 +156,16 @@ def register_views(hass, assets):
                     if cookie_mode and operation != "logout":
                         remembered = await manager.refresh_session(token, link_id)
                     if operation == "action":
-                        if set(data) != {"action_id", "request_id"}:
+                        if set(data) not in (
+                            {"action_id", "request_id"},
+                            {"action_id", "request_id", "value"},
+                        ):
                             raise AccessError("invalid_request", 400)
                         await manager.action(
-                            token, data["action_id"], data["request_id"]
+                            token,
+                            data["action_id"],
+                            data["request_id"],
+                            data.get("value"),
                         )
                         result = {"requested": True}
                     else:

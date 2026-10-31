@@ -490,3 +490,112 @@ async def test_new_unpressed_button_is_available_but_unknown_lock_is_not(http):
     hass.states.async_set(entity, "unavailable")
     assert not entity_available(hass, entity)
     assert not entity_available(hass, "button.synthetic_missing")
+
+
+async def test_device_catalog_and_slider_dispatch_use_only_granted_targets(
+    http, link_data
+):
+    from custom_components.guest_access.controls import device_state, dispatch_action
+
+    hass, m = http.hass, http.manager
+    calls = []
+
+    async def record(call):
+        calls.append((call.domain, call.service, dict(call.data)))
+
+    for domain, services in {
+        "light": ("turn_on", "turn_off"),
+        "cover": ("open_cover", "close_cover", "stop_cover", "set_cover_position"),
+    }.items():
+        for service in services:
+            hass.services.async_register(domain, service, record)
+    hass.states.async_set(
+        "light.synthetic_dimmer",
+        "on",
+        {
+            "supported_color_modes": ["brightness"],
+            "brightness": 128,
+        },
+    )
+    hass.states.async_set(
+        "light.synthetic_basic", "off", {"supported_color_modes": ["onoff"]}
+    )
+    hass.states.async_set(
+        "cover.synthetic_blind",
+        "open",
+        {"supported_features": 15, "current_position": 75},
+    )
+    hass.states.async_set("cover.synthetic_basic", "closed", {"supported_features": 3})
+    result = await http.client.post(
+        "/api/guest_access/admin/manage",
+        headers=http.headers["admin"],
+        json={"operation": "list"},
+    )
+    catalog = {(c["entity_id"], c["action"]) for c in (await result.json())["catalog"]}
+    assert ("light.synthetic_dimmer", "set_brightness") in catalog
+    assert ("cover.synthetic_blind", "set_cover_position") in catalog
+    assert ("light.synthetic_basic", "set_brightness") not in catalog
+    assert ("cover.synthetic_basic", "set_cover_position") not in catalog
+    assert ("cover.synthetic_basic", "stop_cover") not in catalog
+    link_data["grants"] = [
+        {
+            "entity_id": "light.synthetic_dimmer",
+            "action": "set_brightness",
+            "label": "Room light",
+        },
+        {
+            "entity_id": "cover.synthetic_blind",
+            "action": "set_cover_position",
+            "label": "Room blind",
+        },
+    ]
+    saved = await m.save_link(link_data, password="synthetic-password-one")
+    await m.set_enabled(True)
+    m.describe = lambda entity: device_state(hass, entity)
+    m.monotonic = lambda: http.clock
+
+    async def dispatch(entity, action, value=None):
+        await dispatch_action(hass, entity, action, value)
+
+    m.dispatch = dispatch
+    token = await m.login(saved["id"], "synthetic-password-one", "peer")
+    headers = {"X-Guest-Session": token}
+    actions = m.status(token)["actions"]
+    assert [action["value"] for action in actions] == [50, 75]
+    assert all("entity_id" not in action for action in actions)
+    for i, value in enumerate([0, 100]):
+        reply = await http.client.post(
+            "/api/guest_access/action",
+            headers=headers,
+            json={
+                "action_id": actions[i]["id"],
+                "request_id": f"synthetic-slider-{i}",
+                "value": value,
+            },
+        )
+        assert reply.status == 200
+        http.clock += 4
+    assert calls == [
+        (
+            "light",
+            "turn_on",
+            {"entity_id": "light.synthetic_dimmer", "brightness_pct": 0},
+        ),
+        (
+            "cover",
+            "set_cover_position",
+            {"entity_id": "cover.synthetic_blind", "position": 100},
+        ),
+    ]
+    reply = await http.client.post(
+        "/api/guest_access/action",
+        headers=headers,
+        json={
+            "action_id": actions[0]["id"],
+            "request_id": "synthetic-bad-target",
+            "value": 25,
+            "entity_id": "light.synthetic_basic",
+        },
+    )
+    assert reply.status == 400
+    assert len(calls) == 2

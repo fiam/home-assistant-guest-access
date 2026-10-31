@@ -493,3 +493,35 @@ async def test_rejected_link_does_not_exhaust_shared_login_budget(authorized):
     token = await m.login(authorized.link_id, "synthetic-password-one", "guest-peer")
     assert m.status(token)
     assert len(m.attempts["global"]) == 7
+
+
+@pytest.mark.parametrize(
+    "domain,action", [("light", "set_brightness"), ("cover", "set_cover_position")]
+)
+@pytest.mark.parametrize("value", [None, -1, 101, 20.5, True, "50", {}, []])
+async def test_slider_values_must_be_bounded_integers(
+    setup, link_data, domain, action, value
+):
+    m = setup.manager
+    link_data["grants"] = [
+        {
+            "entity_id": f"{domain}.synthetic",
+            "action": action,
+            "label": "Synthetic control",
+        }
+    ]
+    result = await m.save_link(link_data, password="synthetic-password-one")
+    await m.set_enabled(True)
+    token = await m.login(result["id"], "synthetic-password-one", "peer")
+    action_id = m.status(token)["actions"][0]["id"]
+    with pytest.raises(AccessError, match="invalid_value"):
+        await m.action(token, action_id, "synthetic-slider-request", value)
+    assert setup.calls == []
+
+
+async def test_door_actions_reject_slider_values(authorized):
+    with pytest.raises(AccessError, match="invalid_request"):
+        await authorized.manager.action(
+            authorized.session, authorized.action_id, "synthetic-door-value", 50
+        )
+    assert authorized.calls == []

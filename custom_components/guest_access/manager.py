@@ -21,7 +21,7 @@ from datetime import UTC, datetime, timedelta
 
 from cryptography.fernet import Fernet, InvalidToken
 
-from .const import ALLOWED_ACTIONS
+from .const import ALLOWED_ACTIONS, DEVICE_DOMAINS, VALUE_ACTIONS
 
 
 class AccessError(Exception):
@@ -110,9 +110,22 @@ class Manager:
     """All public operations apply current policy, never a session's old grants."""
 
     def __init__(
-        self, store, dispatch, available, *, key_store, now=None, monotonic=None
+        self,
+        store,
+        dispatch,
+        available,
+        *,
+        key_store,
+        now=None,
+        monotonic=None,
+        action_available=None,
+        describe=None,
     ):
         self.store, self.dispatch, self.available = store, dispatch, available
+        self.action_available = action_available or (
+            lambda entity, action: self.available(entity)
+        )
+        self.describe = describe or (lambda entity: {})
         self.key_store = key_store
         self.cipher = None
         self.now = now or (lambda: datetime.now(UTC))
@@ -468,7 +481,17 @@ class Manager:
                     "id": g["id"],
                     "label": g["label"],
                     "kind": g["entity_id"].split(".", 1)[0] + "." + g["action"],
-                    "available": self.available(g["entity_id"]),
+                    "available": self.action_available(g["entity_id"], g["action"]),
+                    **(
+                        {
+                            "device_id": hashlib.sha256(
+                                g["entity_id"].encode()
+                            ).hexdigest()[:24],
+                            **self.describe(g["entity_id"]),
+                        }
+                        if g["entity_id"].split(".", 1)[0] in DEVICE_DOMAINS
+                        else {}
+                    ),
                 }
                 for g in record["grants"]
             ],
@@ -481,7 +504,7 @@ class Manager:
             if removed and removed.get("persistent"):
                 await self._save()
 
-    async def action(self, token, action_id, request_id):
+    async def action(self, token, action_id, request_id, value=None):
         if not isinstance(request_id, str) or not re.fullmatch(
             r"[a-zA-Z0-9-]{16,64}", request_id
         ):
@@ -491,7 +514,12 @@ class Manager:
             grant = next((g for g in record["grants"] if g["id"] == action_id), None)
             if grant is None:
                 raise AccessError("not_allowed")
-            if not self.available(grant["entity_id"]):
+            if grant["action"] in VALUE_ACTIONS:
+                if type(value) is not int or not 0 <= value <= 100:
+                    raise AccessError("invalid_value", 400)
+            elif value is not None:
+                raise AccessError("invalid_request", 400)
+            if not self.action_available(grant["entity_id"], grant["action"]):
                 raise AccessError("unavailable", 503)
             now = self.monotonic()
             while self.recent and next(iter(self.recent.values())) <= now - 600:
@@ -510,7 +538,10 @@ class Manager:
         outcome = "requested"
         try:
             async with asyncio.timeout(20):
-                await self.dispatch(grant["entity_id"], grant["action"])
+                if grant["action"] in VALUE_ACTIONS:
+                    await self.dispatch(grant["entity_id"], grant["action"], value)
+                else:
+                    await self.dispatch(grant["entity_id"], grant["action"])
         except asyncio.CancelledError:
             outcome = "unconfirmed"
             raise

@@ -8,6 +8,7 @@ from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.storage import Store
 
 from .const import DOMAIN
+from .controls import action_supported, device_state, dispatch_action, entity_available
 from .http import register_views
 from .manager import Manager
 from .storage import CheckedStore
@@ -19,19 +20,9 @@ async def async_setup(hass, config):
     return True
 
 
-def entity_available(hass, entity_id):
-    state = hass.states.get(entity_id)
-    if state is None or state.state == "unavailable":
-        return False
-    # A button's unknown state means it has never been pressed.
-    return state.state != "unknown" or state.domain in {"button", "input_button"}
-
-
 async def async_setup_entry(hass: HomeAssistant, entry):
-    async def dispatch(entity_id, action):
-        await hass.services.async_call(
-            entity_id.split(".", 1)[0], action, {"entity_id": entity_id}, blocking=True
-        )
+    async def dispatch(entity_id, action, value=None):
+        await dispatch_action(hass, entity_id, action, value)
 
     def available(entity_id):
         return entity_available(hass, entity_id)
@@ -41,6 +32,10 @@ async def async_setup_entry(hass: HomeAssistant, entry):
         dispatch,
         available,
         key_store=CheckedStore(hass, 1, f"{DOMAIN}_key", private=True),
+        action_available=lambda entity, action: (
+            entity_available(hass, entity) and action_supported(hass, entity, action)
+        ),
+        describe=lambda entity: device_state(hass, entity),
     )
     await manager.load()
     hass.data[DOMAIN] = entry.runtime_data = manager

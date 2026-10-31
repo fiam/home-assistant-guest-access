@@ -1,6 +1,7 @@
 """Management logic; the HTTP adapter requires an authenticated HA administrator."""
 
 from .const import ACTION_NAMES, ALLOWED_ACTIONS, DOMAIN
+from .controls import action_supported
 from .manager import AccessError, validate_link
 
 
@@ -47,16 +48,8 @@ async def manage(hass, msg):
             # A disappeared device must not prevent pausing or shortening a link.
             if (grant["entity_id"], grant["action"]) in previous_grants:
                 continue
-            entity = hass.states.get(grant["entity_id"])
-            domain = grant["entity_id"].split(".", 1)[0]
-            if entity is None or not hass.services.has_service(domain, grant["action"]):
+            if not action_supported(hass, grant["entity_id"], grant["action"]):
                 raise AccessError("entity_or_action_missing", 400)
-            if (
-                domain == "lock"
-                and grant["action"] == "open"
-                and not (entity.attributes.get("supported_features", 0) & 1)
-            ):
-                raise AccessError("open_not_supported", 400)
         result = await manager.save_link(
             link,
             link_id=msg.get("link_id"),
@@ -75,13 +68,7 @@ async def manage(hass, msg):
     for state in hass.states.async_all():
         domain = state.entity_id.split(".", 1)[0]
         for action in ALLOWED_ACTIONS.get(domain, ()):
-            if not hass.services.has_service(domain, action):
-                continue
-            if (
-                domain == "lock"
-                and action == "open"
-                and not state.attributes.get("supported_features", 0) & 1
-            ):
+            if not action_supported(hass, state.entity_id, action):
                 continue
             catalog.append(
                 {
