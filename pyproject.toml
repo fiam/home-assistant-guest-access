@@ -1,6 +1,6 @@
 [project]
 name = "home-assistant-guest-access"
-version = "0.3.1"
+version = "0.4.0"
 requires-python = ">=3.14.2"
 description = "Password-protected, time-bound guest links for selected Home Assistant actions"
 

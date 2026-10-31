@@ -1,4 +1,4 @@
-import { icon, actionIcon } from "./icons.js?v=0.3.1";
+import { icon, actionIcon } from "./icons.js?v=0.4.0";
 const css = `:host { display:block; color:var(--primary-text-color,#202b36); font-family:var(--ha-font-family-body,Roboto,system-ui,sans-serif); background:var(--primary-background-color,#f5f7fa); min-height:100vh; --ga-tint:color-mix(in srgb,var(--primary-color,#03a9f4) 12%,transparent); }
 * { box-sizing:border-box; }
 [hidden] { display:none !important; }

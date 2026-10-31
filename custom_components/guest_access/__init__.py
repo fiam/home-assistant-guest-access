@@ -56,7 +56,7 @@ async def async_setup_entry(hass: HomeAssistant, entry):
         webcomponent_name="guest-access-panel",
         sidebar_title="Guest Access",
         sidebar_icon="mdi:account-key",
-        module_url="/guest-access/assets/admin.js?v=0.3.1",
+        module_url="/guest-access/assets/admin.js?v=0.4.0",
         require_admin=True,
         config_panel_domain=DOMAIN,
     )
