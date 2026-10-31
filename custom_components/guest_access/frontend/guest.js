@@ -247,6 +247,10 @@ import {
         if (controls.has(action.id)) {
           const control = controls.get(action.id);
           control.action = action;
+          control.button.setAttribute(
+            "aria-label",
+            `${actionName(action.kind, strings)}: ${labelFor(action.label, strings)}`,
+          );
           control.button.disabled = disabled;
           if (/\.(turn_on|turn_off)$/.test(action.kind))
             control.button.setAttribute(

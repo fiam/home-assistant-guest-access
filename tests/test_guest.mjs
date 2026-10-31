@@ -179,6 +179,10 @@ test("a light is one card with only its granted controls", async (t) => {
   t.after(page.close);
   assert.equal(page.get("actions").children.length, 1);
   assert.equal(page.document.querySelectorAll(".device-button").length, 2);
+  assert.equal(
+    page.document.querySelectorAll(".device-button")[1].getAttribute("aria-label"),
+    "Turn off: Room light",
+  );
   assert.equal(page.document.querySelectorAll('input[type="range"]').length, 1);
   page.document.querySelectorAll(".device-button")[1].click();
   assert.equal(page.get("confirm").open, true);
