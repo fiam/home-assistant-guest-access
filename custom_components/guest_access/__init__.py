@@ -19,6 +19,14 @@ async def async_setup(hass, config):
     return True
 
 
+def entity_available(hass, entity_id):
+    state = hass.states.get(entity_id)
+    if state is None or state.state == "unavailable":
+        return False
+    # A button's unknown state means it has never been pressed.
+    return state.state != "unknown" or state.domain in {"button", "input_button"}
+
+
 async def async_setup_entry(hass: HomeAssistant, entry):
     async def dispatch(entity_id, action):
         await hass.services.async_call(
@@ -26,8 +34,7 @@ async def async_setup_entry(hass: HomeAssistant, entry):
         )
 
     def available(entity_id):
-        state = hass.states.get(entity_id)
-        return state is not None and state.state not in {"unavailable", "unknown"}
+        return entity_available(hass, entity_id)
 
     manager = Manager(
         CheckedStore(hass, 1, DOMAIN, private=True),

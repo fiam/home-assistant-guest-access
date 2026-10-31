@@ -19,6 +19,7 @@ from homeassistant.helpers import (
 )
 from homeassistant.setup import async_setup_component
 
+from custom_components.guest_access import entity_available
 from custom_components.guest_access.const import DOMAIN
 from custom_components.guest_access.http import register_views
 from custom_components.guest_access.manager import Manager
@@ -469,3 +470,23 @@ async def test_admin_updates_require_current_version_and_pause_is_scoped(
         },
     )
     assert response.status == 400
+
+
+async def test_new_unpressed_button_is_available_but_unknown_lock_is_not(http):
+    hass = http.hass
+    assert await async_setup_component(
+        hass,
+        "input_button",
+        {"input_button": {"synthetic_new": {"name": "Synthetic new button"}}},
+    )
+    await hass.async_block_till_done()
+    entity = "input_button.synthetic_new"
+    assert hass.states.get(entity).state == "unknown"
+    assert entity_available(hass, entity)
+    hass.states.async_set("button.synthetic_new", "unknown")
+    assert entity_available(hass, "button.synthetic_new")
+    hass.states.async_set("lock.synthetic_unknown", "unknown")
+    assert not entity_available(hass, "lock.synthetic_unknown")
+    hass.states.async_set(entity, "unavailable")
+    assert not entity_available(hass, entity)
+    assert not entity_available(hass, "button.synthetic_missing")
