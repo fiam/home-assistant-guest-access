@@ -17,6 +17,8 @@ whenever you need to. Your guests don't need a Home Assistant account or app.
 
 - **Share individual actions.** Let someone open a door without giving them the
   lock's other controls or access to the rest of your home.
+- **Share a room's controls.** Select its lights and blinds once. Guests get one
+  card per device, with brightness and position sliders where supported.
 - **Prepare for a visit.** Set a start and end time, then send the link in advance.
   Change the dates, buttons, or password later without replacing the link.
 - **Stay in control.** Pause one guest link or all access at once. Every button
@@ -88,8 +90,9 @@ Restart Home Assistant and add the integration as described above.
 
 1. Open **Guest Access → New link** and give it a name, such as “Weekend guests”.
 2. Set when access starts and ends. Dates use your browser's local time.
-3. Choose the devices and actions to share, and give the buttons clear names.
-   For a door, select only **Open door** if that's all your guest needs.
+3. Choose **Devices** to share a light, blind, or other device with its listed
+   controls. Use **Individual actions** for narrower access, such as only
+   **Open door**. Give each device a clear name.
 4. Enter a password of 12–128 characters, or leave it blank to generate one.
    Use **Show password** whenever you need to see it again.
 5. Enable the link and guest access. A future start time lets you set everything
@@ -103,6 +106,12 @@ Home Screen** to keep the link handy.
 
 <p align="center"><img src="docs/screenshots/guest-confirm.png" width="460" alt="Confirm before opening the apartment door"></p>
 
+Lights and blinds keep their controls together. Guests can adjust a slider,
+choose **Apply**, and confirm the change. Selecting a device shares its listed
+controls at the time you save; it doesn't automatically add future controls.
+
+<p align="center"><img src="docs/screenshots/guest-room.png" width="460" alt="Room light with a brightness slider and room blinds with a position slider"></p>
+
 The built-in names **Apartment door** and **Building entrance** follow the guest's
 language. Names you write yourself stay as you entered them.
 
@@ -111,9 +120,13 @@ language. Names you write yourself stay as you entered them.
 | Device | Actions you can share separately |
 | --- | --- |
 | Lock | Open door, lock, unlock |
-| Cover | Open, close, stop |
+| Cover / blind | Open, close, stop, position |
 | Button / input button | Press |
-| Light / switch / fan | Turn on, turn off |
+| Light | Turn on, turn off, brightness |
+| Switch / fan | Turn on, turn off |
+
+Only controls supported by the device are offered. Existing links keep their
+selected actions when you edit them.
 
 Scripts and arbitrary service calls aren't supported. If a shared button
 triggers an automation, your guest can trigger that automation too.

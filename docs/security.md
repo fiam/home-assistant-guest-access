@@ -32,6 +32,13 @@
 - Every request checks the current global enable switch, link status, start,
   expiry and password revision. Every action resolves its target from current
   server-side permissions. A guest session cannot authenticate to HA itself.
+- Device selection saves an explicit list of actions; newly discovered controls
+  are not automatically granted. Guests can submit only a saved action ID and,
+  for brightness or cover position, an integer percentage from 0 to 100. The
+  server selects the entity, service, and allowed parameter. State responses
+  include only the selected device's basic state and percentage.
+- Administrator edits use version checks to reject stale forms. Pause/resume
+  updates only the enabled flag, preserving the latest permissions and schedule.
 - Login attempts are limited per client address (10/min), per link (5/min) and
   globally (60/min). Only two password checks can run concurrently. HA must have
   correctly configured trusted proxies for accurate client-address limits.
@@ -41,7 +48,9 @@
   physically observed opening.
 - At most 100 links, 32 actions per link, 256 sign-ins and 100 audit records
   are retained. Login counters and non-remembered sessions are memory-only. A persistence
-  failure pauses access in the running process and reports a failure.
+  failure pauses access in the running process and reports a failure. Policy
+  writes are checked against the stored file before success is acknowledged;
+  cancellation and unload wait for pending writes to finish.
 
 Use the existing **HTTPS** HA URL externally. Anyone holding both the link and
 password has the same access; this is shared-secret guest access, not identity

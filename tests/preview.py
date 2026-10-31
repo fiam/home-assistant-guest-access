@@ -69,6 +69,49 @@ async def main():
             hass.states.async_set(
                 entity, "locked", {"friendly_name": label, "supported_features": 1}
             )
+
+        async def room_control(call):
+            entity = call.data["entity_id"]
+            state = hass.states.get(entity)
+            attrs = dict(state.attributes)
+            if call.domain == "light":
+                brightness = round(call.data.get("brightness_pct", 100) * 255 / 100)
+                on = call.service != "turn_off" and brightness > 0
+                attrs["brightness"] = brightness if on else 0
+                hass.states.async_set(entity, "on" if on else "off", attrs)
+            else:
+                position = call.data.get("position", attrs.get("current_position", 0))
+                if call.service == "open_cover":
+                    position = 100
+                elif call.service == "close_cover":
+                    position = 0
+                attrs["current_position"] = position
+                hass.states.async_set(entity, "open" if position else "closed", attrs)
+
+        for domain, services in {
+            "light": ("turn_on", "turn_off"),
+            "cover": ("open_cover", "close_cover", "stop_cover", "set_cover_position"),
+        }.items():
+            for service in services:
+                hass.services.async_register(domain, service, room_control)
+        hass.states.async_set(
+            "light.synthetic_room",
+            "on",
+            {
+                "friendly_name": "Room light",
+                "supported_color_modes": ["brightness"],
+                "brightness": 153,
+            },
+        )
+        hass.states.async_set(
+            "cover.synthetic_room",
+            "open",
+            {
+                "friendly_name": "Room blinds",
+                "supported_features": 15,
+                "current_position": 35,
+            },
+        )
         manager = hass.data["guest_access"]
         now = datetime.now(UTC)
         result = await manager.save_link(
@@ -88,6 +131,40 @@ async def main():
                         "action": "open",
                         "label": "Apartment door",
                     },
+                ],
+            },
+            password="synthetic-preview-password",
+        )
+        room = await manager.save_link(
+            {
+                "name": "Guest room",
+                "enabled": True,
+                "starts_at": (now - timedelta(hours=1)).isoformat(),
+                "expires_at": (now + timedelta(days=2)).isoformat(),
+                "grants": [
+                    {
+                        "entity_id": f"{domain}.synthetic_room",
+                        "action": action,
+                        "label": label,
+                    }
+                    for domain, label, actions in (
+                        (
+                            "light",
+                            "Room light",
+                            ("turn_on", "turn_off", "set_brightness"),
+                        ),
+                        (
+                            "cover",
+                            "Room blinds",
+                            (
+                                "open_cover",
+                                "close_cover",
+                                "stop_cover",
+                                "set_cover_position",
+                            ),
+                        ),
+                    )
+                    for action in actions
                 ],
             },
             password="synthetic-preview-password",
@@ -120,7 +197,10 @@ async def main():
             requires_auth = False
 
             async def get(self, request):
-                raise web.HTTPFound("/guest-access#" + result["id"])
+                raise web.HTTPFound(
+                    "/guest-access#"
+                    + (room if request.query.get("room") else result)["id"]
+                )
 
         hass.http.register_view(Preview())
         hass.http.register_view(GuestPreview())

@@ -31,9 +31,10 @@ sh tests/preview.sh
 ```
 
 Open `http://127.0.0.1:39282/preview-admin` or `/preview-guest`.
+Use `/preview-guest?room=1` for the light and blind controls.
 Use the demo password `synthetic-preview-password`. The preview exposes a
 **test-only administrator shortcut** on loopback, uses disposable configuration,
-and registers no-op services for fictional devices. Never expose the preview
+and registers services that only update fictional device states. Never expose the preview
 publicly or install its code in a real Home Assistant instance.
 
 Capture only the page content, not browser chrome, account names, or unrelated
