@@ -22,13 +22,20 @@ import {
   let signedIn = false,
     busy = false,
     selected = null,
-    expires = 0;
+    expires = 0,
+    epoch = 0,
+    statusSequence = 0,
+    messageSource = "";
   const messages = strings.errors;
-  function message(text, error = false) {
+  function message(text, error = false, source = "") {
+    messageSource = source;
     $("message").textContent = text;
     $("message").className = error ? "error" : "";
   }
   function forget() {
+    epoch += 1;
+    busy = false;
+    $("login").querySelector("button").disabled = false;
     signedIn = false;
     expires = 0;
     selected = null;
@@ -61,12 +68,29 @@ import {
       );
     }
     if (!response.ok) {
-      if ([401, 403].includes(response.status)) forget();
       const error = new Error(messages[result.error] || strings.failure);
       error.status = response.status;
+      error.code = result.error;
       throw error;
     }
     return result;
+  }
+  function suspendAccess() {
+    signedIn = true;
+    expires = 0;
+    selected = null;
+    $("confirm").close();
+    $("actions").replaceChildren();
+    $("login").hidden = true;
+    $("login-note").hidden = true;
+    $("controls").hidden = false;
+    $("expiry").parentElement.hidden = true;
+    if ($("intro").textContent === strings.intro) $("intro").textContent = "";
+  }
+  function handleError(error, policy = true) {
+    if (error.status === 401) forget();
+    else if (policy && ["access_paused", "outside_window"].includes(error.code))
+      suspendAccess();
   }
   function render(data) {
     signedIn = true;
@@ -75,6 +99,7 @@ import {
     $("intro").textContent = data.name;
     $("login").hidden = true;
     $("controls").hidden = false;
+    $("expiry").parentElement.hidden = false;
     $("expiry").textContent = strings.until.replace(
       "{date}",
       new Intl.DateTimeFormat(locale, {
@@ -116,37 +141,43 @@ import {
   }
   async function refresh(silent = false) {
     if (busy) return;
+    const started = epoch, sequence = ++statusSequence;
     try {
-      render(await api("status"));
+      const data = await api("status");
+      if (started !== epoch || sequence !== statusSequence || busy) return;
+      render(data);
+      if (messageSource === "status") message("");
     } catch (error) {
-      if (!(silent && error.status === 401)) message(error.message, true);
-      $("actions")
-        .querySelectorAll("button")
-        .forEach((b) => (b.disabled = true));
+      if (started !== epoch || sequence !== statusSequence || busy) return;
+      handleError(error);
+      if (!(silent && error.status === 401)) message(error.message, true, "status");
+      $("actions").querySelectorAll("button").forEach((b) => (b.disabled = true));
     }
   }
   $("login").addEventListener("submit", async (event) => {
     event.preventDefault();
     if (busy) return;
+    const started = ++epoch;
     busy = true;
     $("login").querySelector("button").disabled = true;
     message(strings.checking);
     const password = $("password").value;
     $("password").value = "";
     try {
-      const data = await api("login", {
-        link,
-        password,
-        remember: $("remember").checked,
-      });
+      const data = await api("login", { link, password, remember: $("remember").checked });
+      if (started !== epoch) return;
       busy = false;
       render(data);
       message("");
     } catch (error) {
+      if (started !== epoch) return;
+      handleError(error, false);
       message(error.message, true);
     } finally {
-      busy = false;
-      $("login").querySelector("button").disabled = false;
+      if (started === epoch) {
+        busy = false;
+        $("login").querySelector("button").disabled = false;
+      }
     }
   });
   $("cancel").addEventListener("click", () => {
@@ -155,34 +186,40 @@ import {
   });
   $("send").addEventListener("click", async () => {
     if (busy || !selected) return;
-    const action = selected;
+    const started = ++epoch, action = selected;
     selected = null;
     $("confirm").close();
     busy = true;
-    $("actions")
-      .querySelectorAll("button")
-      .forEach((b) => (b.disabled = true));
+    $("actions").querySelectorAll("button").forEach((b) => (b.disabled = true));
     message(strings.sending);
     try {
-      await api("action", {
-        action_id: action.id,
-        request_id: crypto.randomUUID(),
-      });
-      message(strings.sent);
+      await api("action", { action_id: action.id, request_id: crypto.randomUUID() });
+      if (started === epoch) message(strings.sent);
     } catch (error) {
-      message(error.message || messages.unconfirmed, true);
+      if (started !== epoch) return;
+      handleError(error);
+      message(error.message || messages.unconfirmed, true, "status");
     } finally {
-      busy = false;
-      setTimeout(refresh, 3200);
+      if (started === epoch) {
+        busy = false;
+        setTimeout(refresh, 3200);
+      }
     }
   });
   $("logout").addEventListener("click", async () => {
+    const started = ++epoch;
+    busy = true;
     try {
       await api("logout");
+      if (started !== epoch) return;
       forget();
       message("");
     } catch (error) {
+      if (started !== epoch) return;
+      handleError(error);
       message(error.message, true);
+    } finally {
+      if (started === epoch) busy = false;
     }
   });
   document.addEventListener("visibilitychange", () => {
@@ -190,8 +227,9 @@ import {
   });
   setInterval(() => {
     if (expires && expires <= Date.now()) {
-      forget();
-      message(messages.outside_window, true);
+      suspendAccess();
+      message(messages.outside_window, true, "status");
+      refresh();
     }
   }, 1000);
   setInterval(() => {

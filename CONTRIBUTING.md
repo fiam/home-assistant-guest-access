@@ -14,7 +14,8 @@ not connect to a real installation or actuate devices.
 docker build -t guest-access-test:2026.10.4 -f tests/Dockerfile .
 docker run --rm --network none -v "$PWD:/work:ro" \
   guest-access-test:2026.10.4 -q
-node --test tests/test_frontend.mjs
+npm ci --ignore-scripts
+npm test
 uvx ruff@0.17.3 check .
 uvx ruff@0.17.3 format --check .
 ```

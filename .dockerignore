@@ -1,0 +1,9 @@
+.git
+.local
+.venv
+node_modules
+dist
+.env*
+.storage
+secrets.yaml
+configuration.yaml

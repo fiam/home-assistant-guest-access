@@ -1,0 +1,7 @@
+{
+  "name": "home-assistant-guest-access-tests",
+  "private": true,
+  "type": "module",
+  "scripts": { "test": "node --experimental-vm-modules --test tests/test_*.mjs" },
+  "devDependencies": { "jsdom": "30.1.3" }
+}
