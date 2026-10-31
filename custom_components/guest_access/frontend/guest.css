@@ -416,6 +416,16 @@ dialog p {
   margin: 4px 0 0;
   cursor: pointer;
 }
+.slider-adjustment {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 4px 12px;
+  margin-top: 8px;
+}
+.slider-adjustment .slider-ends {
+  grid-column: 1;
+}
 .device-slider input[type="range"]:disabled {
   opacity: 0.5;
   cursor: default;

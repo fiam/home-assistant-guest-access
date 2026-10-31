@@ -233,8 +233,10 @@ import {
           action.kind.startsWith("cover.") ? strings.open : "100%",
         ),
       );
-      row.append(label, output, apply);
-      block.append(row, range, ends);
+      const adjustment = element("div", "slider-adjustment");
+      row.append(label, output);
+      adjustment.append(range, apply, ends);
+      block.append(row, adjustment);
       card.append(block);
     }
     card.update = (current) => {
