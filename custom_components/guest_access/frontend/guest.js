@@ -400,7 +400,13 @@ import {
     } catch (error) {
       if (started !== epoch) return;
       handleError(error);
-      message(error.message || messages.unconfirmed, true, "status");
+      message(
+        error.message || messages.unconfirmed,
+        true,
+        ["access_paused", "outside_window"].includes(error.code)
+          ? "status"
+          : "action",
+      );
     } finally {
       if (started === epoch) {
         busy = false;

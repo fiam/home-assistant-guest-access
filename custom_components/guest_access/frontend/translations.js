@@ -64,11 +64,11 @@ export const translations = {
       not_allowed: "This action is no longer allowed.",
       duplicate_request: "This request has already been received.",
       action_failed:
-        "The request could not be confirmed. Check the door before trying again.",
+        "The request could not be confirmed. Check the device before trying again.",
       unconfirmed:
-        "The request could not be confirmed. Check the door before trying again.",
+        "The request could not be confirmed. Check the device before trying again.",
       storage_failed:
-        "Access has been paused. The request could not be confirmed; check the door before trying again.",
+        "Access has been paused. The request could not be confirmed; check the device before trying again.",
     },
   },
   pt: {
@@ -136,11 +136,11 @@ export const translations = {
       not_allowed: "Esta ação já não está autorizada.",
       duplicate_request: "Este pedido já foi recebido.",
       action_failed:
-        "Não foi possível confirmar o pedido. Verifique a porta antes de tentar novamente.",
+        "Não foi possível confirmar o pedido. Verifique o dispositivo antes de tentar novamente.",
       unconfirmed:
-        "Não foi possível confirmar o pedido. Verifique a porta antes de tentar novamente.",
+        "Não foi possível confirmar o pedido. Verifique o dispositivo antes de tentar novamente.",
       storage_failed:
-        "O acesso foi suspenso. Não foi possível confirmar o pedido; verifique a porta antes de tentar novamente.",
+        "O acesso foi suspenso. Não foi possível confirmar o pedido; verifique o dispositivo antes de tentar novamente.",
     },
   },
   es: {
@@ -208,11 +208,11 @@ export const translations = {
       not_allowed: "Esta acción ya no está autorizada.",
       duplicate_request: "Esta solicitud ya se ha recibido.",
       action_failed:
-        "No se ha podido confirmar la solicitud. Comprueba la puerta antes de volver a intentarlo.",
+        "No se ha podido confirmar la solicitud. Comprueba el dispositivo antes de volver a intentarlo.",
       unconfirmed:
-        "No se ha podido confirmar la solicitud. Comprueba la puerta antes de volver a intentarlo.",
+        "No se ha podido confirmar la solicitud. Comprueba el dispositivo antes de volver a intentarlo.",
       storage_failed:
-        "El acceso se ha suspendido. No se ha podido confirmar la solicitud; comprueba la puerta antes de volver a intentarlo.",
+        "El acceso se ha suspendido. No se ha podido confirmar la solicitud; comprueba el dispositivo antes de volver a intentarlo.",
     },
   },
 };

@@ -259,3 +259,20 @@ test("refresh keeps button focus and closes a revoked confirmation", async (t) =
   await flush();
   assert.equal(page.calls.filter((c) => c.operation === "action").length, 0);
 });
+
+test("a status refresh cannot clear an unconfirmed command warning", async (t) => {
+  const page = await guestPage(({ operation }) => {
+    if (operation === "action") throw new Error("connection lost");
+    return response(activeState());
+  });
+  t.after(page.close);
+  page.get("actions").querySelector("button").click();
+  page.get("send").click();
+  await flush();
+  const warning = page.get("message").textContent;
+  assert.match(warning, /could not be confirmed/i);
+  await page.tick(3200);
+  await page.tick(15000);
+  assert.equal(page.get("message").textContent, warning);
+  assert.equal(page.calls.filter((c) => c.operation === "action").length, 1);
+});
