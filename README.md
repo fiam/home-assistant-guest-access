@@ -130,32 +130,20 @@ Pausing or changing the schedule keeps remembered browsers signed in, so guests
 can return when you resume access. Changing the password or deleting the link
 revokes those sign-ins. Guests can also **Sign out** to forget their browser.
 
-## Passwords and security
+## Sharing safely
 
-Share your **HTTPS Home Assistant address** for access outside your network.
-Anyone who has both the link and password can use the controls you've shared.
-Guest sign-ins don't give access to the Home Assistant dashboard or its API.
+Use HTTPS when sharing access outside your home. Keep the link and password
+private, and send them separately. If you need to withdraw access, pause the
+link or change its password.
 
-Saved passwords are encrypted so administrators can retrieve them. Remembered
-browsers use a secure sign-in cookie, not a stored password. Sign-ins last up to
-a year and renew with use, although clearing cookies or browser privacy settings
-can require guests to sign in again.
-
-Protect your Home Assistant backups: they include guest access settings and the
-password-recovery key. Review active links after restoring a backup.
-
-Read more about [security and storage](docs/security.md), or
-[report a vulnerability privately](SECURITY.md). This project hasn't had an
-independent security audit.
+[Security information](docs/security.md) · [Report a security issue](SECURITY.md)
 
 ## Updates and removal
 
-Install updates through HACS or Marketplace, restart when prompted, and reload
-your browser. For a manual installation, replace `custom_components/guest_access`
-with the new version and restart Home Assistant.
+Update through HACS or Marketplace and restart if prompted. To remove Guest
+Access, go to **Settings → Devices & services**. This also deletes your guest links.
 
-Removing Guest Access from **Devices & services** deletes its saved links and
-sign-ins. You can then uninstall its files through HACS or Marketplace.
+[Manual updates and backups](docs/maintenance.md)
 
 ## Contributing
 

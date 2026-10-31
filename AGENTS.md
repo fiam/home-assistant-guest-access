@@ -17,7 +17,9 @@ it does, show the controls, and give short installation and usage steps. Use
 natural language and concrete examples. Avoid process commentary, internal
 implementation jargon, and statements about how screenshots or documentation
 were produced. Keep development instructions in CONTRIBUTING.md and detailed
-security information in docs/security.md.
+security information in docs/security.md. Keep authentication mechanisms, cookie
+attributes, persistence formats, and backup internals out of the README; explain
+only what a user needs to do.
 
 Keep HACS and Home Assistant Marketplace installation guidance accurate for the
 versions being discussed. Check primary documentation before changing it. Do
