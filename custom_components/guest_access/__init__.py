@@ -10,6 +10,7 @@ from homeassistant.helpers.storage import Store
 from .const import DOMAIN
 from .http import register_views
 from .manager import Manager
+from .storage import CheckedStore
 
 CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
@@ -29,10 +30,10 @@ async def async_setup_entry(hass: HomeAssistant, entry):
         return state is not None and state.state not in {"unavailable", "unknown"}
 
     manager = Manager(
-        Store(hass, 1, DOMAIN, private=True),
+        CheckedStore(hass, 1, DOMAIN, private=True),
         dispatch,
         available,
-        key_store=Store(hass, 1, f"{DOMAIN}_key", private=True),
+        key_store=CheckedStore(hass, 1, f"{DOMAIN}_key", private=True),
     )
     await manager.load()
     hass.data[DOMAIN] = entry.runtime_data = manager
