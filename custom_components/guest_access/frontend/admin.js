@@ -109,7 +109,9 @@ class GuestAccessPanel extends HTMLElement {
       return true;
     } catch (error) {
       this.notice.textContent =
-        error.message || "The change could not be saved.";
+        (error.message === "conflict"
+          ? "This link changed in another window. Refresh and reopen it before saving."
+          : error.message) || "The change could not be saved.";
       return false;
     }
   }
@@ -239,9 +241,9 @@ class GuestAccessPanel extends HTMLElement {
               text: link.enabled ? "Pause" : "Resume",
               icon: link.enabled ? "pause" : "play",
               onclick: () =>
-                this.perform("save", {
+                this.perform("link_enabled", {
                   link_id: link.id,
-                  link: this.clean(link, !link.enabled),
+                  enabled: !link.enabled,
                 }),
             }),
             el("button", {
@@ -328,19 +330,6 @@ class GuestAccessPanel extends HTMLElement {
         }),
       );
     }
-  }
-  clean(link, enabled = link.enabled) {
-    return {
-      name: link.name,
-      enabled,
-      starts_at: link.starts_at,
-      expires_at: link.expires_at,
-      grants: link.grants.map(({ entity_id, action, label }) => ({
-        entity_id,
-        action,
-        label,
-      })),
-    };
   }
   edit(link) {
     const now = Date.now();
@@ -507,7 +496,10 @@ class GuestAccessPanel extends HTMLElement {
           grants: [...selections.values()],
         },
       };
-      if (link) extra.link_id = link.id;
+      if (link) {
+        extra.link_id = link.id;
+        extra.version = link.version;
+      }
       if (password.value) extra.password = password.value;
       await this.perform("save", extra);
       save.disabled = false;

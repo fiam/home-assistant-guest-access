@@ -11,6 +11,7 @@ async def manage(hass, msg):
         "link",
         "password",
         "enabled",
+        "version",
     }:
         raise AccessError("invalid_request", 400)
     if "link_id" in msg and not isinstance(msg["link_id"], str):
@@ -20,13 +21,22 @@ async def manage(hass, msg):
         raise AccessError("unavailable", 503)
     result = {}
     operation = msg.get("operation")
-    if operation not in {"list", "save", "delete", "enabled", "reveal_password"}:
+    if operation not in {
+        "list",
+        "save",
+        "delete",
+        "enabled",
+        "link_enabled",
+        "reveal_password",
+    }:
         raise AccessError("invalid_request", 400)
     if operation == "reveal_password":
         if set(msg) != {"operation", "link_id"}:
             raise AccessError("invalid_request", 400)
         return await manager.reveal_password(msg["link_id"])
     if operation == "save":
+        if "link_id" in msg and type(msg.get("version")) is not int:
+            raise AccessError("conflict", 409)
         link = msg.get("link")
         cleaned = validate_link(link)
         existing = manager.links.get(msg.get("link_id"), {})
@@ -48,10 +58,17 @@ async def manage(hass, msg):
             ):
                 raise AccessError("open_not_supported", 400)
         result = await manager.save_link(
-            link, link_id=msg.get("link_id"), password=msg.get("password")
+            link,
+            link_id=msg.get("link_id"),
+            password=msg.get("password"),
+            expected_version=msg.get("version"),
         )
     elif operation == "delete":
         await manager.delete_link(msg.get("link_id"))
+    elif operation == "link_enabled":
+        if set(msg) != {"operation", "link_id", "enabled"}:
+            raise AccessError("invalid_request", 400)
+        await manager.set_link_enabled(msg["link_id"], msg["enabled"])
     elif operation == "enabled":
         await manager.set_enabled(msg.get("enabled"))
     catalog = []

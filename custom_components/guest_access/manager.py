@@ -149,6 +149,7 @@ class Manager:
         self.cipher = Fernet(key_data["key"].encode())
         # Fail closed on invalid stored records rather than silently broadening them.
         for record in self.links.values():
+            record.setdefault("version", 1)
             validate_link(
                 {
                     k: (
@@ -250,7 +251,28 @@ class Manager:
             self._event("enabled" if enabled else "paused")
             await self._save()
 
-    async def save_link(self, data, *, link_id=None, password=None):
+    async def set_link_enabled(self, link_id, enabled):
+        if not isinstance(enabled, bool):
+            raise AccessError("invalid_link", 400)
+        async with self.lock:
+            self._ensure_open()
+            record = self.links.get(link_id)
+            if record is None:
+                raise AccessError("not_found", 404)
+            record["enabled"] = enabled
+            record["version"] = record.get("version", 1) + 1
+            if not enabled:
+                self.sessions = {
+                    key: session
+                    for key, session in self.sessions.items()
+                    if session["link"] != link_id or session.get("persistent")
+                }
+            self._event("resumed" if enabled else "paused", record)
+            await self._save()
+
+    async def save_link(
+        self, data, *, link_id=None, password=None, expected_version=None
+    ):
         cleaned = validate_link(data)
         generated = None
         if link_id is None and password is None:
@@ -272,8 +294,13 @@ class Manager:
                 if link_id not in self.links:
                     raise AccessError("not_found", 404)
                 previous = self.links[link_id]
+                if expected_version is not None and expected_version != previous.get(
+                    "version", 1
+                ):
+                    raise AccessError("conflict", 409)
             record = self.links[link_id] = {
                 **cleaned,
+                "version": previous.get("version", 0) + 1,
                 "password_hash": hashed or previous["password_hash"],
                 "password_encrypted": (
                     self._encrypt_password(link_id, password)

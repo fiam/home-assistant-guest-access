@@ -453,3 +453,23 @@ async def test_close_waits_for_an_accepted_storage_write(authorized):
     assert authorized.store.data["enabled"] is False
     with pytest.raises(AccessError, match="unavailable"):
         await old.set_enabled(True)
+
+
+async def test_pause_does_not_restore_stale_policy_and_edits_conflict(
+    authorized, link_data
+):
+    m = authorized.manager
+    stale = copy.deepcopy(link_data)
+    version = m.admin_state()["links"][0]["version"]
+    shortened = copy.deepcopy(link_data)
+    shortened["grants"].pop()
+    shortened["expires_at"] = "2026-10-31T13:00:00+00:00"
+    await m.save_link(shortened, link_id=authorized.link_id, expected_version=version)
+    await m.set_link_enabled(authorized.link_id, False)
+    await m.set_link_enabled(authorized.link_id, True)
+    record = m.links[authorized.link_id]
+    assert len(record["grants"]) == 1
+    assert record["expires_at"] == shortened["expires_at"]
+    with pytest.raises(AccessError, match="conflict"):
+        await m.save_link(stale, link_id=authorized.link_id, expected_version=version)
+    assert len(m.links[authorized.link_id]["grants"]) == 1

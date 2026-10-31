@@ -175,7 +175,7 @@ async def test_http_scoping_edit_and_no_guest_override(http, link_data):
     response = await http.client.post(
         "/api/guest_access/admin/manage",
         headers=http.headers["admin"],
-        json={"operation": "save", "link_id": link_id, "link": link_data},
+        json={"operation": "save", "link_id": link_id, "link": link_data, "version": 1},
     )
     assert response.status == 200
     response = await http.client.post(
@@ -239,6 +239,7 @@ async def test_http_revocation_and_password_reset(http, link_data):
         json={
             "operation": "save",
             "link_id": link_id,
+            "version": 1,
             "link": link_data,
             "password": "synthetic-password-two",
         },
@@ -276,7 +277,7 @@ async def test_missing_device_cannot_block_pausing_its_link(http, link_data):
     response = await http.client.post(
         "/api/guest_access/admin/manage",
         headers=http.headers["admin"],
-        json={"operation": "save", "link_id": link_id, "link": link_data},
+        json={"operation": "save", "link_id": link_id, "link": link_data, "version": 1},
     )
     assert response.status == 200
     response = await http.client.post(
@@ -425,3 +426,46 @@ async def test_browser_can_choose_a_nonpersistent_cookie(http, link_data):
         "/api/guest_access/status", headers=headers, json={}
     )
     assert response.status == 401
+
+
+async def test_admin_updates_require_current_version_and_pause_is_scoped(
+    http, link_data
+):
+    link_id, _, _ = await create_guest(http, link_data)
+    url = "/api/guest_access/admin/manage"
+    for version in (None, True, 0):
+        response = await http.client.post(
+            url,
+            headers=http.headers["admin"],
+            json={
+                "operation": "save",
+                "link_id": link_id,
+                "link": link_data,
+                "version": version,
+            },
+        )
+        assert response.status == 409
+    response = await http.client.post(
+        url,
+        headers=http.headers["admin"],
+        json={
+            "operation": "link_enabled",
+            "link_id": link_id,
+            "enabled": False,
+        },
+    )
+    assert response.status == 200
+    state = await response.json()
+    assert state["links"][0]["enabled"] is False
+    assert len(state["links"][0]["grants"]) == 2
+    response = await http.client.post(
+        url,
+        headers=http.headers["admin"],
+        json={
+            "operation": "link_enabled",
+            "link_id": link_id,
+            "enabled": True,
+            "link": link_data,
+        },
+    )
+    assert response.status == 400
