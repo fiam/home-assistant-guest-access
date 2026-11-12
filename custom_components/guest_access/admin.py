@@ -1,6 +1,7 @@
 """Management logic; the HTTP adapter requires an authenticated HA administrator."""
 
-from .const import ACTION_NAMES, ALLOWED_ACTIONS, DOMAIN
+from .catalog import build_catalog
+from .const import DOMAIN
 from .controls import action_supported
 from .manager import AccessError, validate_link
 
@@ -64,19 +65,6 @@ async def manage(hass, msg):
         await manager.set_link_enabled(msg["link_id"], msg["enabled"])
     elif operation == "enabled":
         await manager.set_enabled(msg.get("enabled"))
-    catalog = []
-    for state in hass.states.async_all():
-        domain = state.entity_id.split(".", 1)[0]
-        for action in ALLOWED_ACTIONS.get(domain, ()):
-            if not action_supported(hass, state.entity_id, action):
-                continue
-            catalog.append(
-                {
-                    "entity_id": state.entity_id,
-                    "action": action,
-                    "name": state.attributes.get("friendly_name", state.entity_id),
-                    "action_name": ACTION_NAMES[action],
-                }
-            )
+    catalog = build_catalog(hass, manager.links)
     base_url = hass.config.external_url or hass.config.internal_url or ""
     return {**manager.admin_state(), "catalog": catalog, "base_url": base_url, **result}

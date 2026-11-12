@@ -7,7 +7,8 @@ from aiohttp.test_utils import TestClient, TestServer
 from homeassistant import loader
 from homeassistant.auth import auth_manager_from_config
 from homeassistant.auth.const import GROUP_ID_ADMIN, GROUP_ID_USER
-from homeassistant.config_entries import ConfigEntries
+from homeassistant.config_entries import ConfigEntries, ConfigEntry, ConfigEntryDisabler
+from homeassistant.const import EntityCategory
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import (
     area_registry,
@@ -599,3 +600,84 @@ async def test_device_catalog_and_slider_dispatch_use_only_granted_targets(
     )
     assert reply.status == 400
     assert len(calls) == 2
+
+
+async def test_catalog_groups_registry_devices_and_retains_missing_saved_actions(http):
+    from custom_components.guest_access.catalog import build_catalog
+
+    hass = http.hass
+    entry = ConfigEntry(
+        version=1,
+        minor_version=1,
+        domain="test",
+        title="Synthetic device",
+        data={},
+        options={},
+        source="user",
+        unique_id=None,
+        discovery_keys={},
+        subentries_data=[],
+        disabled_by=ConfigEntryDisabler.USER,
+    )
+    await hass.config_entries.async_add(entry)
+    area = area_registry.async_get(hass).async_create("Synthetic entryway")
+    devices = device_registry.async_get(hass)
+    device = devices.async_get_or_create(
+        config_entry_id=entry.entry_id,
+        identifiers={("test", "synthetic-door")},
+        name="Door model",
+    )
+    devices.async_update_device(device.id, name_by_user="Front door", area_id=area.id)
+    entities = entity_registry.async_get(hass)
+    lock = entities.async_get_or_create(
+        "lock",
+        "test",
+        "synthetic-door",
+        suggested_object_id="synthetic_door",
+        config_entry=entry,
+        device_id=device.id,
+    )
+    identify = entities.async_get_or_create(
+        "button",
+        "test",
+        "synthetic-identify",
+        suggested_object_id="synthetic_identify",
+        config_entry=entry,
+        device_id=device.id,
+        entity_category=EntityCategory.DIAGNOSTIC,
+    )
+    hass.states.async_set(
+        lock.entity_id,
+        "locked",
+        {"friendly_name": "Door lock", "supported_features": 1},
+    )
+    hass.states.async_set(
+        identify.entity_id, "unknown", {"friendly_name": "Identify door"}
+    )
+    hass.services.async_register("button", "press", lambda _: None)
+    catalog = build_catalog(hass, {})
+    lock_choice = next(c for c in catalog if c["entity_id"] == lock.entity_id)
+    button_choice = next(c for c in catalog if c["entity_id"] == identify.entity_id)
+    assert lock_choice["device_id"] == button_choice["device_id"] == device.id
+    assert lock_choice["device_name"] == "Front door"
+    assert lock_choice["area"] == "Synthetic entryway"
+    assert not lock_choice["maintenance"]
+    assert button_choice["maintenance"]
+    assert button_choice["available"]
+    hass.states.async_remove(lock.entity_id)
+    saved = {"synthetic": {"grants": [{"entity_id": lock.entity_id, "action": "open"}]}}
+    catalog = build_catalog(hass, saved)
+    missing = next(c for c in catalog if c["entity_id"] == lock.entity_id)
+    assert missing["device_id"] == device.id
+    assert missing["action"] == "open"
+    assert not missing["selectable"]
+    assert not missing["available"]
+    # Standalone helpers retain their entity identity rather than merging together.
+    helpers = [
+        c
+        for c in catalog
+        if c["entity_id"].startswith("lock.synthetic_")
+        and c["entity_id"] != lock.entity_id
+    ]
+    assert len({c["entity_id"] for c in helpers}) == 2
+    assert all(c["device_id"] is None for c in helpers)
