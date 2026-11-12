@@ -1,11 +1,11 @@
 /* Sign-in is an HttpOnly cookie. Never store passwords or retry commands. */
-import { icon, actionIcon } from "./icons.js?v=0.4.0";
+import { icon, actionIcon } from "./icons.js?v=0.5.0";
 import {
   translations,
   languageFor,
   actionName,
   labelFor,
-} from "./translations.js?v=0.4.0";
+} from "./translations.js?v=0.5.0";
 (() => {
   const { lang, locale } = languageFor(
     navigator.languages?.length ? navigator.languages : [navigator.language],

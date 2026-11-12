@@ -90,15 +90,29 @@ Restart Home Assistant and add the integration as described above.
 
 1. Open **Guest Access → New link** and give it a name, such as “Weekend guests”.
 2. Set when access starts and ends. Dates use your browser's local time.
-3. Choose **Devices** to share a light, blind, or other device with its listed
-   controls. Use **Individual actions** for narrower access, such as only
-   **Open door**. Give each device a clear name.
+3. Select **Add device**, then choose a device. Share all its controls or select
+   just the ones your guest needs, such as **Open door**. Give it a clear guest
+   name and select **Done**. Repeat for any other devices.
 4. Enter a password of 12–128 characters, or leave it blank to generate one.
    Use **Show password** whenever you need to see it again.
-5. Enable the link and guest access. A future start time lets you set everything
+5. **Save link** and enable guest access. A future start time lets you set everything
    up before your guest arrives.
 6. **Copy link** and send it to your guest. Send the password separately through
    a secure channel.
+
+The link editor shows only the devices you have chosen. Select **Edit** beside
+a device to change its controls or guest name.
+
+<p align="center"><img src="docs/screenshots/admin-sharing.png" width="560" alt="Shared devices with separate Edit controls and an Add device button"></p>
+
+<details>
+<summary>Choose exactly what to share</summary>
+
+<p align="center"><img src="docs/screenshots/admin-device-dialog.png" width="460" alt="Device dialog with Open door selected and Lock and Unlock left unselected"></p>
+
+Maintenance actions, such as Identify, stay separate from everyday controls.
+
+</details>
 
 Your guest opens the link, signs in, and chooses a button. They'll see a
 confirmation before anything happens. On iPhone, they can use Safari's **Add to

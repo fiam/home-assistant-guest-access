@@ -1,6 +1,14 @@
 # Changelog
 
-## 0.4.0 — Unreleased
+## 0.5.0 — Unreleased
+
+- Show only shared devices in the link editor, with more space between rows.
+- Add and edit devices in a dialog; share all everyday controls or choose a subset.
+- Group entities by their Home Assistant device and show room names in search.
+- Keep maintenance actions separate, and preserve existing labels and permissions
+  when devices are unavailable.
+
+## 0.4.0 — 2026-10-31
 
 - Select devices with their supported controls, or choose individual actions
   for narrower access. Existing links keep their current permissions.

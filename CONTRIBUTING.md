@@ -31,7 +31,8 @@ sh tests/preview.sh
 ```
 
 Open `http://127.0.0.1:39282/preview-admin` or `/preview-guest`.
-Use `/preview-guest?room=1` for the light and blind controls.
+Use `/preview-admin?theme=dark` to check the dark theme, and
+`/preview-guest?room=1` for the light and blind controls.
 Use the demo password `synthetic-preview-password`. The preview exposes a
 **test-only administrator shortcut** on loopback, uses disposable configuration,
 and registers services that only update fictional device states. Never expose the preview
