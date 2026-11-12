@@ -1,4 +1,5 @@
-import { icon, actionIcon } from "./icons.js?v=0.4.0";
+import { icon, actionIcon } from "./icons.js?v=0.5.0";
+import { createDevicePicker } from "./device-picker.js?v=0.5.0";
 const css = `:host { display:block; color:var(--primary-text-color,#202b36); font-family:var(--ha-font-family-body,Roboto,system-ui,sans-serif); background:var(--primary-background-color,#f5f7fa); min-height:100vh; --ga-tint:color-mix(in srgb,var(--primary-color,#03a9f4) 12%,transparent); }
 * { box-sizing:border-box; }
 [hidden] { display:none !important; }
@@ -28,15 +29,8 @@ label { display:grid; gap:8px; margin:16px 0; font-size:14px; }
 input,select { min-height:48px; padding:12px; border:1px solid var(--divider-color,#ccc); border-radius:8px; background:var(--card-background-color,white); color:inherit; width:100%; }
 input[type=checkbox] { width:20px; height:20px; min-height:20px; margin:0; accent-color:var(--primary-color); }
 .check { display:flex; align-items:center; gap:12px; }
-.catalog { max-height:340px; overflow:auto; padding:4px 16px; border:1px solid var(--divider-color,#ddd); border-radius:12px; }
-.choice { border-bottom:1px solid var(--divider-color,#ddd); padding:12px 0; }
-.choice:last-child { border-bottom:0; }
-.choice small { display:block; color:var(--secondary-text-color); margin:6px 0 0 32px; font-size:11px; overflow-wrap:anywhere; }
-.choice label { margin:4px 0; }
-.choice input:not([type=checkbox]) { margin-top:10px; }
 small { line-height:1.5; }
 .toolbar { margin:16px 0 28px; }
-.picker-mode { max-width:260px; }
 .control-summary { display:block; font-size:12px; color:var(--secondary-text-color); margin-top:4px; }
 .secret { font-family:monospace; overflow-wrap:anywhere; font-size:18px; }
 .actions { margin-top:20px; padding-top:16px; border-top:1px solid var(--divider-color,#ddd); }
@@ -52,6 +46,56 @@ li .icon { color:var(--primary-color); }
 .empty { display:grid; justify-items:center; padding:40px 24px; border:1px dashed var(--divider-color,#ccc); border-radius:16px; text-align:center; }
 .empty>.icon { width:36px; height:36px; color:var(--secondary-text-color); margin-bottom:8px; }
 .empty p { max-width:360px; margin-bottom:0; }
+.link-editor { padding:32px; }
+.link-editor>label { margin:24px 0; }
+.link-editor>.grid { gap:24px; }
+.link-editor>.actions { margin-top:36px; padding-top:24px; }
+.device-sharing { margin-top:36px; padding-top:32px; border-top:1px solid var(--divider-color,#dce3e9); }
+.sharing-heading { display:flex; justify-content:space-between; align-items:center; gap:24px; margin-bottom:16px; }
+.sharing-heading h3 { margin:0; font-size:20px; font-weight:500; }
+.sharing-count { font-size:14px; margin:8px 0 0; }
+.shared-device { display:flex; align-items:center; gap:20px; padding:26px 0; border-bottom:1px solid var(--divider-color,#dce3e9); }
+.shared-device:last-child { border-bottom:0; padding-bottom:8px; }
+.device-badge { width:44px; height:44px; flex:0 0 auto; display:grid; place-items:center; color:var(--primary-color,#007eae); }
+.device-badge .icon { width:28px; height:28px; }
+.device-copy { flex:1; min-width:0; text-align:left; }
+.device-copy h4,.device-copy strong { display:block; margin:0; font-size:16px; font-weight:500; overflow-wrap:anywhere; }
+.device-copy p,.device-copy small { display:block; margin:7px 0 0; font-size:14px; line-height:1.5; color:var(--secondary-text-color,#65717e); overflow-wrap:anywhere; }
+.device-row-actions { display:flex; align-items:center; gap:12px; }
+button.icon-button { padding:10px; min-width:40px; min-height:40px; background:transparent; color:var(--secondary-text-color,#65717e); }
+.sharing-empty { padding:24px 0; margin:0; font-size:15px; }
+.device-dialog { padding:0; width:min(580px,calc(100vw - 48px)); max-width:none; max-height:calc(100dvh - 64px); border:1px solid var(--divider-color,#dce3e9); border-radius:24px; background:var(--ha-card-background,var(--card-background-color,white)); color:var(--primary-text-color,#202b36); box-shadow:0 16px 48px #0004; overflow:hidden; }
+.device-dialog[open] { display:flex; flex-direction:column; }
+.device-dialog::backdrop { background:#0008; }
+.dialog-header { padding:28px 32px 24px; flex:0 0 auto; }
+.dialog-heading { display:flex; align-items:flex-start; justify-content:space-between; gap:20px; }
+.dialog-heading h2 { font-size:24px; margin:0; line-height:1.3; overflow-wrap:anywhere; }
+.dialog-heading p { font-size:14px; margin:10px 0 0; }
+.dialog-heading .icon-button { margin:-6px -10px 0 0; }
+.dialog-body { min-height:0; overflow-y:auto; overscroll-behavior:contain; padding:0 32px 28px; }
+.dialog-actions { display:flex; justify-content:flex-end; align-items:center; gap:12px; padding:20px 32px; border-top:1px solid var(--divider-color,#dce3e9); flex:0 0 auto; }
+.dialog-back { margin:-8px 0 16px -12px; padding:8px 12px; }
+.device-search { margin-bottom:20px; font-size:16px; }
+button.device-result { display:flex; gap:16px; align-items:center; width:100%; padding:20px 0; background:transparent; color:inherit; border-radius:0; border:0; border-bottom:1px solid var(--divider-color,#dce3e9); }
+button.device-result:last-child { border-bottom:0; }
+.device-result>.icon { color:var(--secondary-text-color,#65717e); width:16px; }
+.dialog-actions .maintenance-toggle { margin-right:auto; font-size:12px; background:transparent; padding:8px 0; text-align:left; }
+.selection-tools { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; margin:4px 0 28px; }
+button.plain-button { background:transparent; color:var(--secondary-text-color,#65717e); padding-inline:0; }
+.control-group { min-width:0; border:0; padding:0; margin:0 0 28px; }
+.control-group:last-child { margin-bottom:0; }
+.control-group legend { font-size:14px; font-weight:500; margin:0 0 12px; padding:0; color:var(--secondary-text-color,#65717e); }
+.control-check { display:flex; align-items:center; gap:14px; min-height:48px; margin:4px 0; font-size:16px; }
+.control-check small { display:block; color:var(--secondary-text-color,#65717e); font-size:12px; }
+.guest-name { display:grid; gap:10px; margin:22px 0 0 34px; font-size:13px; color:var(--secondary-text-color,#65717e); }
+.guest-name input { font-size:16px; color:var(--primary-text-color,#202b36); }
+.action-name { margin-top:8px; margin-bottom:20px; }
+.maintenance-actions { margin:28px 0 0; }
+.maintenance-actions[open]>summary { margin-bottom:16px; }
+.entity-details { margin:24px 0 0; font-size:12px; }
+.entity-details p { font-size:12px; overflow-wrap:anywhere; }
+.dialog-error { color:var(--error-color,#db4437); font-size:14px; margin-top:20px; }
+@media(max-width:650px) { .link-editor{padding:24px 20px}.sharing-heading{gap:16px;align-items:flex-start}.sharing-heading h3{font-size:18px}.sharing-heading>button{white-space:nowrap}.shared-device{gap:12px;padding:24px 0}.device-row-actions{gap:0}.device-badge{width:32px}.device-copy h4{font-size:16px}.device-copy p{font-size:13px}.device-dialog{width:calc(100vw - 24px);max-height:calc(100dvh - 32px);border-radius:18px}.dialog-header{padding:24px}.dialog-body{padding:0 24px 24px}.dialog-actions{padding:18px 24px}.dialog-heading h2{font-size:22px}.guest-name{margin-left:0} }
 @media(max-width:650px) { .wrap{padding:24px 16px}.grid{grid-template-columns:1fr}header{align-items:flex-start;flex-wrap:wrap}.heading{gap:12px}.heading-icon{width:44px;height:44px;border-radius:14px}h1{font-size:24px}.card{padding:20px}header p{font-size:13px}.actions{gap:8px}.actions button{padding-inline:12px} }
 `;
 function el(tag, attrs = {}, children = []) {
@@ -354,7 +398,7 @@ class GuestAccessPanel extends HTMLElement {
   }
   edit(link) {
     const now = Date.now();
-    const form = el("form", { className: "card" });
+    const form = el("form", { className: "card link-editor" });
     const field = (text, input) =>
       el("label", {}, [el("span", { text }), input]);
     const name = el("input", {
@@ -403,165 +447,9 @@ class GuestAccessPanel extends HTMLElement {
         enabled,
         el("span", { text: "Enable this link within its access window" }),
       ]),
-      el("h3", { text: "Allowed actions" }),
-      el("p", {
-        text: "Choose a device to share all its listed controls, or use Individual actions to choose only some, such as Open door.",
-      }),
     );
-    const search = el("input", {
-      placeholder: "Filter by device, entity or action",
-      type: "search",
-      "aria-label": "Filter devices and actions",
-    });
-    const catalog = el("div", { className: "catalog" });
-    const selections = new Map(
-      (link?.grants || []).map((g) => [
-        g.entity_id + ":" + g.action,
-        { entity_id: g.entity_id, action: g.action, label: g.label },
-      ]),
-    );
-    // Include saved grants even if an entity is temporarily unavailable or removed.
-    const choices = new Map(
-      this.data.catalog.map((c) => [c.entity_id + ":" + c.action, c]),
-    );
-    for (const grant of link?.grants || [])
-      if (!choices.has(grant.entity_id + ":" + grant.action))
-        choices.set(grant.entity_id + ":" + grant.action, {
-          ...grant,
-          name: grant.entity_id,
-          action_name: grant.action,
-        });
-    const mode = el(
-      "select",
-      { className: "picker-mode", "aria-label": "Share by" },
-      [
-        el("option", { value: "devices", text: "Devices" }),
-        el("option", { value: "actions", text: "Individual actions" }),
-      ],
-    );
-    mode.value = "devices";
-    const drawActions = () => {
-      catalog.replaceChildren();
-      const query = search.value.toLowerCase();
-      for (const [key, choice] of choices) {
-        if (
-          !`${choice.name} ${choice.entity_id} ${choice.action_name}`
-            .toLowerCase()
-            .includes(query)
-        )
-          continue;
-        const check = el("input", {
-          type: "checkbox",
-          checked: selections.has(key),
-        });
-        const label = el("input", {
-          value:
-            selections.get(key)?.label ||
-            String(choice.name || choice.entity_id).slice(0, 80),
-          maxLength: 80,
-          "aria-label": "Guest button label",
-          hidden: !check.checked,
-        });
-        check.addEventListener("change", () => {
-          label.hidden = !check.checked;
-          if (check.checked)
-            selections.set(key, {
-              entity_id: choice.entity_id,
-              action: choice.action,
-              label: label.value,
-            });
-          else selections.delete(key);
-        });
-        label.addEventListener("input", () => {
-          if (selections.has(key)) selections.get(key).label = label.value;
-        });
-        catalog.append(
-          el("div", { className: "choice" }, [
-            el("label", { className: "check" }, [
-              check,
-              el("span", { text: `${choice.name} · ${choice.action_name}` }),
-            ]),
-            el("small", { text: choice.entity_id }),
-            label,
-          ]),
-        );
-      }
-    };
-    const drawDevices = () => {
-      catalog.replaceChildren();
-      const groups = new Map();
-      for (const [key, choice] of choices) {
-        if (!groups.has(choice.entity_id)) groups.set(choice.entity_id, []);
-        groups.get(choice.entity_id).push({ key, ...choice });
-      }
-      const query = search.value.toLowerCase();
-      for (const [entity, controls] of groups) {
-        const first = controls[0];
-        if (
-          !`${first.name} ${entity} ${controls.map((c) => c.action_name).join(" ")}`
-            .toLowerCase()
-            .includes(query)
-        )
-          continue;
-        const selected = controls.filter((c) => selections.has(c.key));
-        const check = el("input", {
-          type: "checkbox",
-          checked: selected.length === controls.length,
-          indeterminate:
-            selected.length > 0 && selected.length < controls.length,
-        });
-        const label = el("input", {
-          value: selected.length
-            ? selections.get(selected[0].key).label
-            : String(first.name || entity).slice(0, 80),
-          maxLength: 80,
-          "aria-label": "Guest device name",
-          hidden: !selected.length,
-        });
-        const summary = el("small");
-        const summarize = () => {
-          const granted = controls.filter((c) => selections.has(c.key));
-          summary.textContent = `${granted.length ? "Selected" : "Available"}: ${(granted.length ? granted : controls).map((c) => c.action_name).join(" · ")}`;
-        };
-        check.addEventListener("change", () => {
-          check.indeterminate = false;
-          label.hidden = !check.checked;
-          for (const control of controls) {
-            if (check.checked)
-              selections.set(control.key, {
-                entity_id: entity,
-                action: control.action,
-                label: label.value,
-              });
-            else selections.delete(control.key);
-          }
-          summarize();
-        });
-        label.addEventListener("input", () => {
-          for (const control of controls)
-            if (selections.has(control.key))
-              selections.get(control.key).label = label.value;
-        });
-        summarize();
-        catalog.append(
-          el("div", { className: "choice" }, [
-            el("label", { className: "check" }, [
-              check,
-              el("span", { text: first.name }),
-            ]),
-            summary,
-            el("small", { text: entity }),
-            label,
-          ]),
-        );
-      }
-    };
-    const drawChoices = () =>
-      mode.value === "devices" ? drawDevices() : drawActions();
-    search.addEventListener("input", drawChoices);
-    mode.addEventListener("change", drawChoices);
-    drawChoices();
-    form.append(field("Share by", mode), search, catalog);
+    const picker = createDevicePicker(this.data.catalog, link?.grants || []);
+    form.append(picker);
     const save = el("button", {
       type: "submit",
       text: "Save link",
@@ -581,13 +469,15 @@ class GuestAccessPanel extends HTMLElement {
     );
     form.addEventListener("submit", async (event) => {
       event.preventDefault();
-      if (!selections.size) {
-        this.notice.textContent = "Select at least one action.";
+      if (picker.querySelector("dialog").open) return;
+      const grants = picker.getGrants();
+      if (!grants.length) {
+        this.notice.textContent = "Add at least one shared device.";
         return;
       }
-      if (selections.size > 32) {
+      if (grants.length > 32) {
         this.notice.textContent =
-          "A link can share up to 32 actions. Select fewer devices or choose individual actions.";
+          "A link can share up to 32 controls. Choose fewer controls.";
         return;
       }
       if (new Date(ends.value) <= new Date(starts.value)) {
@@ -601,7 +491,7 @@ class GuestAccessPanel extends HTMLElement {
           enabled: enabled.checked,
           starts_at: new Date(starts.value).toISOString(),
           expires_at: new Date(ends.value).toISOString(),
-          grants: [...selections.values()],
+          grants,
         },
       };
       if (link) {

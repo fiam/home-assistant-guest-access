@@ -111,6 +111,13 @@ export async function adminPage(data) {
     pretendToBeVisual: true,
   });
   dom.window.HTMLElement.prototype.scrollIntoView = () => {};
+  dom.window.HTMLDialogElement.prototype.showModal = function () {
+    this.open = true;
+  };
+  dom.window.HTMLDialogElement.prototype.close = function () {
+    this.open = false;
+    this.dispatchEvent(new dom.window.Event("close"));
+  };
   await loadFrontend(dom, "admin.js");
   const calls = [],
     panel = dom.window.document.querySelector("guest-access-panel");

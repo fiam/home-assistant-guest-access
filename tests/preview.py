@@ -15,6 +15,7 @@ from homeassistant.auth import auth_manager_from_config
 from homeassistant.auth.const import GROUP_ID_ADMIN
 from homeassistant.components.http import HomeAssistantView
 from homeassistant.config_entries import ConfigEntries
+from homeassistant.const import EntityCategory
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import (
     area_registry,
@@ -54,12 +55,53 @@ async def main():
         flow = await hass.config_entries.flow.async_init(
             "guest_access", context={"source": "user"}
         )
-        await hass.config_entries.flow.async_configure(flow["flow_id"], {})
+        configured = await hass.config_entries.flow.async_configure(flow["flow_id"], {})
         await hass.async_block_till_done()
+
+        entry = configured["result"]
+        devices = device_registry.async_get(hass)
+        entities = entity_registry.async_get(hass)
+        areas = area_registry.async_get(hass)
+        entryway = areas.async_create("Entryway")
+        bedroom = areas.async_create("Guest room")
+        for domain, object_id, name, area in (
+            ("lock", "synthetic_building", "Building entrance", entryway),
+            ("lock", "synthetic_apartment", "Apartment door", entryway),
+            ("light", "synthetic_room", "Room light", bedroom),
+            ("cover", "synthetic_room", "Room blinds", bedroom),
+        ):
+            device = devices.async_get_or_create(
+                config_entry_id=entry.entry_id,
+                identifiers={("guest_access", f"{domain}.{object_id}")},
+                name=name,
+            )
+            devices.async_update_device(device.id, area_id=area.id)
+            entities.async_get_or_create(
+                domain,
+                "guest_access",
+                object_id,
+                suggested_object_id=object_id,
+                config_entry=entry,
+                device_id=device.id,
+            )
+            if object_id == "synthetic_apartment":
+                entities.async_get_or_create(
+                    "button",
+                    "guest_access",
+                    "synthetic_identify",
+                    suggested_object_id="synthetic_identify",
+                    config_entry=entry,
+                    device_id=device.id,
+                    entity_category=EntityCategory.DIAGNOSTIC,
+                )
 
         async def noop(call):
             pass
 
+        hass.services.async_register("button", "press", noop)
+        hass.states.async_set(
+            "button.synthetic_identify", "unknown", {"friendly_name": "Identify"}
+        )
         for action in ("open", "lock", "unlock"):
             hass.services.async_register("lock", action, noop)
         for entity, label in (
@@ -184,11 +226,19 @@ async def main():
             requires_auth = False
 
             async def get(self, request):
+                theme = (
+                    "--primary-background-color:#111;--card-background-color:#1c1c1c;"
+                    "--primary-text-color:#e8e8e8;--secondary-text-color:#aaa;"
+                    "--primary-color:#4fc3f7;--divider-color:#383838;"
+                    "--secondary-background-color:#252525;color-scheme:dark;"
+                    if request.query.get("theme") == "dark"
+                    else ""
+                )
                 return web.Response(
                     content_type="text/html",
                     text="""<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{margin:0;--primary-background-color:#f5f7fa;--card-background-color:white;--primary-text-color:#202b36;--secondary-text-color:#65717e;--primary-color:#007eae;--divider-color:#dce3e9;--secondary-background-color:#e4f4fc}</style></head><body><guest-access-panel></guest-access-panel><script type="module">import '/guest-access/assets/admin.js';document.querySelector('guest-access-panel').hass={callApi:async(method,path,data)=>{const response=await fetch('/api/'+path,{method,headers:{'Content-Type':'application/json','Authorization':'Bearer TOKEN'},body:JSON.stringify(data)});const result=await response.json();if(!response.ok)throw Error(result.message);return result;}};</script></body></html>""".replace(
                         "TOKEN", token
-                    ),
+                    ).replace("</style>", f"body{{{theme}}}</style>"),
                 )
 
         class GuestPreview(HomeAssistantView):
