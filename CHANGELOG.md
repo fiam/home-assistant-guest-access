@@ -1,6 +1,11 @@
 # Changelog
 
-## 0.5.0 — Unreleased
+## 0.5.1 — Unreleased
+
+- Keep device search above the scrolling list so its focus outline stays visible.
+- Leave room for keyboard focus outlines inside device dialogs.
+
+## 0.5.0 — 2026-11-12
 
 - Show only shared devices in the link editor, with more space between rows.
 - Add and edit devices in a dialog; share all everyday controls or choose a subset.

@@ -1,4 +1,4 @@
-import { icon, actionIcon } from "./icons.js?v=0.5.0";
+import { icon, actionIcon } from "./icons.js?v=0.5.1";
 
 function el(tag, attrs = {}, children = []) {
   const node = document.createElement(tag);
@@ -119,7 +119,7 @@ export function createDevicePicker(catalog, grants = []) {
     if (event.key === "Enter" && event.target.tagName === "INPUT")
       event.preventDefault();
   });
-  function shell(title, subtitle, content, actions, back) {
+  function shell(title, subtitle, content, actions, back, search) {
     const close = el(
       "button",
       {
@@ -148,6 +148,10 @@ export function createDevicePicker(catalog, grants = []) {
         }),
       );
     header.append(heading);
+    if (search) {
+      header.classList.add("has-search");
+      header.append(search);
+    }
     dialog.replaceChildren(
       header,
       el("div", { className: "dialog-body" }, [content]),
@@ -299,7 +303,7 @@ export function createDevicePicker(catalog, grants = []) {
         : "Show maintenance devices";
       draw();
     });
-    content.append(search, results);
+    content.append(results);
     shell(
       "Add a device",
       "Choose a device to set its shared controls.",
@@ -313,6 +317,8 @@ export function createDevicePicker(catalog, grants = []) {
           onclick: finish,
         }),
       ],
+      false,
+      search,
     );
     draw();
     if (focus) search.focus();
